@@ -21,6 +21,14 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", uptime: process.uptime() });
 });
 
-// Routes
+// Routes Registration
+const syncRoutes = require("./routes/syncRoutes");
+const repoRoutes = require("./routes/repoRoutes");
+const prRoutes = require("./routes/prRoutes");
+
+// Routes mapping
+app.use("/api/sync", syncRoutes);
+app.use("/api/repos", repoRoutes);
+app.use("/api/prs", prRoutes);
 
 module.exports = app;

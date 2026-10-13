@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+require("./User"); // User will be referenced in the Repository schema, so we need to ensure it's loaded
 
 const repoSchema = new mongoose.Schema(
   {
