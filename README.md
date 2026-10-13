@@ -20,8 +20,9 @@ A full-stack dashboard for monitoring GitHub repository health, pull requests, a
 - Lists developer PR activity, avatars, and repositories.
 - Lists stuck pull requests with authors and direct links to GitHub.
 - Syncs repositories and pull requests on demand using the **Sync Data** button.
+- Offers a persistent light/dark theme toggle, defaulting to light mode.
 - Provides API routes for repository lists, pull requests, analytics, and a health check.
-- Uses a responsive dark dashboard layout that supports mobile screens through ultrawide displays.
+- Uses a responsive dashboard layout that supports mobile screens through ultrawide displays.
 
 ## Get started
 

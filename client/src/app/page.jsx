@@ -76,7 +76,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 flex flex-col font-sans dark:bg-black dark:text-zinc-100">
       <Navbar onSyncComplete={loadData} />
 
       <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 flex-1 space-y-8">
@@ -86,7 +86,7 @@ export default function DashboardPage() {
             title="Total Repos"
             value={overview?.totalRepos}
             icon={FolderSimple}
-            colorClass="bg-blue-500/10 text-blue-400"
+            colorClass="bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
           />
           <MetricCard
             title="Inactive Repos"
@@ -112,7 +112,7 @@ export default function DashboardPage() {
             title="Active Devs"
             value={overview?.totalActiveDevs}
             icon={Users}
-            colorClass="bg-indigo-500/10 text-indigo-400"
+            colorClass="bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
           />
         </section>
 

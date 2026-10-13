@@ -39,6 +39,7 @@ Restart the development server after changing environment variables. This value 
 - **Developer activity table:** GitHub avatar, PRs opened, PRs reviewed, and active repositories.
 - **Stuck PR table:** title, repository, author, and a link that opens the pull request on GitHub.
 - **Sync Data:** requests a sync and refreshes the displayed metrics and tables when it completes.
+- **Theme toggle:** switches between light and dark themes and saves the selection in browser `localStorage`; new users start in light mode.
 - **Responsive layout:** cards and tables adapt to mobile, tablet, desktop, and ultrawide widths. Tables can scroll horizontally on narrow screens.
 
 The UI is implemented in `src/app/page.jsx` and `src/components/`. API requests are centralized in `src/lib/api.js`.

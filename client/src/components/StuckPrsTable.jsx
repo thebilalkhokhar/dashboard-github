@@ -5,11 +5,11 @@ import { WarningCircle, ArrowSquareOut } from "@phosphor-icons/react";
 export default function StuckPrsTable({ prs = [], loading }) {
   if (loading) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 animate-pulse">
-        <div className="h-5 bg-slate-800 w-48 rounded mb-4" />
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 animate-pulse dark:border-zinc-800/80 dark:bg-zinc-950">
+        <div className="mb-4 h-5 w-48 rounded bg-zinc-200 dark:bg-zinc-900" />
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-12 bg-slate-800/60 rounded" />
+            <div key={i} className="h-12 rounded bg-zinc-100 dark:bg-zinc-900/60" />
           ))}
         </div>
       </div>
@@ -17,26 +17,26 @@ export default function StuckPrsTable({ prs = [], loading }) {
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-      <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
+      <div className="flex items-center justify-between border-b border-zinc-200 p-5 dark:border-zinc-800">
         <div className="flex items-center gap-2">
           <WarningCircle
             size={20}
             weight="duotone"
-            className="text-amber-400"
+            className="text-amber-500 dark:text-amber-400"
           />
-          <h2 className="text-sm font-semibold text-white">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
             Stuck Pull Requests
           </h2>
         </div>
-        <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full font-medium">
+        <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
           {prs.length} blocked
         </span>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[500px] text-left text-xs">
-          <thead className="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-[11px] uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
             <tr>
               <th className="py-3 px-5">Title</th>
               <th className="py-3 px-5">Repository</th>
@@ -44,10 +44,10 @@ export default function StuckPrsTable({ prs = [], loading }) {
               <th className="py-3 px-5 text-right">Link</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60 text-slate-300">
+          <tbody className="divide-y divide-zinc-200 text-zinc-700 dark:divide-zinc-800/60 dark:text-zinc-300">
             {prs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center py-8 text-slate-500">
+                <td colSpan={4} className="py-8 text-center text-zinc-500 dark:text-zinc-500">
                   No stuck pull requests. All good!
                 </td>
               </tr>
@@ -69,15 +69,15 @@ export default function StuckPrsTable({ prs = [], loading }) {
                 return (
                   <tr
                     key={pr._id}
-                    className="hover:bg-slate-800/40 transition-colors"
+                    className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                   >
                     <td
                       title={`#${pr.prNumber} ${pr.title}`}
-                      className="max-w-[200px] truncate py-3.5 px-5 font-medium text-white sm:max-w-[280px]"
+                      className="max-w-[200px] truncate py-3.5 px-5 font-medium text-zinc-900 sm:max-w-[280px] dark:text-white"
                     >
                       #{pr.prNumber} {pr.title}
                     </td>
-                    <td className="py-3.5 px-5 text-slate-400">
+                    <td className="py-3.5 px-5 text-zinc-500 dark:text-zinc-400">
                       {pr.repository?.name || "Unknown"}
                     </td>
                     <td className="py-3.5 px-5">@{author}</td>
@@ -86,7 +86,7 @@ export default function StuckPrsTable({ prs = [], loading }) {
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 whitespace-nowrap text-indigo-400 hover:text-indigo-300 hover:underline"
+                        className="inline-flex items-center gap-1 whitespace-nowrap text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-white"
                       >
                         View
                         <ArrowSquareOut size={13} />
