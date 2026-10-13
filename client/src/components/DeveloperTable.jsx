@@ -1,9 +1,26 @@
 "use client";
 import React from "react";
 import Image from "next/image";
-import { Users, GitPullRequest, GitMerge } from "@phosphor-icons/react";
+import {
+  MagnifyingGlass,
+  Users,
+  GitPullRequest,
+  GitMerge,
+} from "@phosphor-icons/react";
 
-export default function DeveloperTable({ developers = [], loading }) {
+const sortOptions = [
+  { value: "prsOpenedCount", label: "Most PRs Opened" },
+  { value: "prsReviewedCount", label: "Most PRs Reviewed" },
+  { value: "commitsCount", label: "Most Commits" },
+];
+
+export default function DeveloperTable({
+  developers = [],
+  loading,
+  searchQuery = "",
+}) {
+  const [sortBy, setSortBy] = React.useState("prsOpenedCount");
+
   if (loading) {
     return (
       <div className="rounded-xl border border-zinc-200 bg-white p-6 animate-pulse dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -17,18 +34,42 @@ export default function DeveloperTable({ developers = [], loading }) {
     );
   }
 
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const visibleDevelopers = developers
+    .filter((developer) =>
+      developer.developerUsername?.toLocaleLowerCase().includes(normalizedQuery),
+    )
+    .sort((a, b) => (Number(b[sortBy]) || 0) - (Number(a[sortBy]) || 0));
+
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
-      <div className="flex items-center justify-between border-b border-zinc-200 p-5 dark:border-zinc-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 p-5 dark:border-zinc-800">
         <div className="flex items-center gap-2">
           <Users size={20} weight="duotone" className="text-zinc-600 dark:text-zinc-300" />
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
             Developer Activity & Workload
           </h2>
         </div>
-        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-          {developers.length} contributors
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="developer-sort" className="sr-only">
+            Sort developers
+          </label>
+          <select
+            id="developer-sort"
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+            className="rounded border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+            {visibleDevelopers.length} contributors
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -42,14 +83,21 @@ export default function DeveloperTable({ developers = [], loading }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 text-zinc-700 dark:divide-zinc-800/60 dark:text-zinc-300">
-            {developers.length === 0 ? (
+            {visibleDevelopers.length === 0 ? (
               <tr>
                 <td colSpan={4} className="py-8 text-center text-zinc-500 dark:text-zinc-500">
-                  No developer activity found.
+                  {normalizedQuery ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <MagnifyingGlass size={15} aria-hidden="true" />
+                      No matching results found for &apos;{searchQuery}&apos;
+                    </span>
+                  ) : (
+                    "No developer activity found."
+                  )}
                 </td>
               </tr>
             ) : (
-              developers.map((dev) => (
+              visibleDevelopers.map((dev) => (
                 <tr
                   key={dev._id}
                   className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"

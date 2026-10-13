@@ -17,6 +17,7 @@ A full-stack dashboard for monitoring GitHub repository health, pull requests, a
 ## What it does
 
 - Shows repository totals, inactive repository totals, open and stuck PR totals, and active developer totals.
+- Lists synced repositories with an all/inactive filter, inactivity status, contributor, open PR count, health checks, and last-push date.
 - Lists developer PR activity, avatars, and repositories.
 - Lists stuck pull requests with authors and direct links to GitHub.
 - Syncs repositories and pull requests on demand using the **Sync Data** button.

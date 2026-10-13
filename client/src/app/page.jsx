@@ -2,12 +2,14 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import MetricCard from "@/components/MetricCard";
+import RepositoryTable from "@/components/RepositoryTable";
 import DeveloperTable from "@/components/DeveloperTable";
 import StuckPrsTable from "@/components/StuckPrsTable";
 import {
   fetchOverviewStats,
   fetchDeveloperAnalytics,
   fetchStuckPRs,
+  fetchRepositories,
 } from "@/lib/api";
 import {
   FolderSimple,
@@ -15,29 +17,71 @@ import {
   GitPullRequest,
   WarningOctagon,
   Users,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
 
 export default function DashboardPage() {
   const [overview, setOverview] = useState(null);
   const [developers, setDevelopers] = useState([]);
   const [stuckPrs, setStuckPrs] = useState([]);
+  const [repositories, setRepositories] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [repositoryCounts, setRepositoryCounts] = useState({
+    all: 0,
+    inactive: 0,
+  });
+  const [inactiveOnly, setInactiveOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [repositoriesLoading, setRepositoriesLoading] = useState(true);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [overviewData, devData, stuckData] = await Promise.all([
+      setRepositoriesLoading(true);
+      const [overviewData, devData, stuckData, repositoryData] = await Promise.all([
         fetchOverviewStats(),
         fetchDeveloperAnalytics(),
         fetchStuckPRs(),
+        fetchRepositories(),
       ]);
       setOverview(overviewData);
       setDevelopers(devData);
       setStuckPrs(stuckData);
+      setRepositories(repositoryData);
+      setRepositoryCounts({
+        all: repositoryData.length,
+        inactive: repositoryData.filter((repo) => repo.isInactive).length,
+      });
+      setInactiveOnly(false);
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
     } finally {
       setLoading(false);
+      setRepositoriesLoading(false);
+    }
+  };
+
+  const handleRepositoryFilterChange = async (nextInactiveOnly) => {
+    if (nextInactiveOnly === inactiveOnly) return;
+
+    setRepositoriesLoading(true);
+    try {
+      const repositoryData = await fetchRepositories(nextInactiveOnly);
+      setRepositories(repositoryData);
+      setRepositoryCounts((currentCounts) => ({
+        ...currentCounts,
+        ...(nextInactiveOnly
+          ? { inactive: repositoryData.length }
+          : {
+              all: repositoryData.length,
+              inactive: repositoryData.filter((repo) => repo.isInactive).length,
+            }),
+      }));
+      setInactiveOnly(nextInactiveOnly);
+    } catch (err) {
+      console.error("Failed to fetch repositories:", err);
+    } finally {
+      setRepositoriesLoading(false);
     }
   };
 
@@ -48,10 +92,11 @@ export default function DashboardPage() {
       void (async () => {
         try {
           setLoading(true);
-          const [overviewData, devData, stuckData] = await Promise.all([
+          const [overviewData, devData, stuckData, repositoryData] = await Promise.all([
             fetchOverviewStats(),
             fetchDeveloperAnalytics(),
             fetchStuckPRs(),
+            fetchRepositories(),
           ]);
 
           if (!isMounted) return;
@@ -59,11 +104,18 @@ export default function DashboardPage() {
           setOverview(overviewData);
           setDevelopers(devData);
           setStuckPrs(stuckData);
+          setRepositories(repositoryData);
+          setRepositoryCounts({
+            all: repositoryData.length,
+            inactive: repositoryData.filter((repo) => repo.isInactive).length,
+          });
+          setInactiveOnly(false);
         } catch (err) {
           console.error("Failed to fetch dashboard data:", err);
         } finally {
           if (isMounted) {
             setLoading(false);
+            setRepositoriesLoading(false);
           }
         }
       })();
@@ -116,10 +168,44 @@ export default function DashboardPage() {
           />
         </section>
 
+        <div className="relative w-full sm:w-80">
+          <MagnifyingGlass
+            size={18}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search developers and repositories..."
+            aria-label="Search developers and repositories"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2 pl-10 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:ring-zinc-600"
+          />
+        </div>
+
+        <RepositoryTable
+          repositories={repositories}
+          searchQuery={searchQuery}
+          loading={loading || repositoriesLoading}
+          inactiveOnly={inactiveOnly}
+          allCount={repositoryCounts.all}
+          inactiveCount={repositoryCounts.inactive}
+          onFilterChange={handleRepositoryFilterChange}
+        />
+
         {/* Data Tables Grid */}
         <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 items-start">
-          <DeveloperTable developers={developers} loading={loading} />
-          <StuckPrsTable prs={stuckPrs} loading={loading} />
+          <DeveloperTable
+            developers={developers}
+            loading={loading}
+            searchQuery={searchQuery}
+          />
+          <StuckPrsTable
+            prs={stuckPrs}
+            loading={loading}
+            searchQuery={searchQuery}
+          />
         </section>
       </main>
     </div>

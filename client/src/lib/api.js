@@ -19,6 +19,13 @@ export const fetchStuckPRs = async () => {
   return res.data.data;
 };
 
+export const fetchRepositories = async (inactiveOnly = false) => {
+  const res = await api.get(
+    inactiveOnly ? "/repos/inactive" : "/repos",
+  );
+  return res.data.data;
+};
+
 export const triggerSync = async () => {
   const res = await api.post("/sync/trigger", { owner: "fastify" });
   return res.data;

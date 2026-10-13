@@ -2,7 +2,11 @@
 import React from "react";
 import { WarningCircle, ArrowSquareOut } from "@phosphor-icons/react";
 
-export default function StuckPrsTable({ prs = [], loading }) {
+export default function StuckPrsTable({
+  prs = [],
+  loading,
+  searchQuery = "",
+}) {
   if (loading) {
     return (
       <div className="rounded-xl border border-zinc-200 bg-white p-6 animate-pulse dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -15,6 +19,31 @@ export default function StuckPrsTable({ prs = [], loading }) {
       </div>
     );
   }
+
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const filteredPrs = prs.filter((pr) => {
+    if (!normalizedQuery) return true;
+
+    const author =
+      pr.authorGithubId ||
+      pr.author?.username ||
+      pr.author?.login ||
+      pr.author ||
+      "";
+    const searchableFields = [
+      pr.title,
+      pr.prNumber,
+      author,
+      pr.repository?.name,
+      pr.repository?.fullName,
+    ];
+
+    return searchableFields.some((field) =>
+      String(field ?? "")
+        .toLocaleLowerCase()
+        .includes(normalizedQuery),
+    );
+  });
 
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -30,7 +59,7 @@ export default function StuckPrsTable({ prs = [], loading }) {
           </h2>
         </div>
         <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-          {prs.length} blocked
+          {filteredPrs.length} blocked
         </span>
       </div>
 
@@ -45,14 +74,16 @@ export default function StuckPrsTable({ prs = [], loading }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 text-zinc-700 dark:divide-zinc-800/60 dark:text-zinc-300">
-            {prs.length === 0 ? (
+            {filteredPrs.length === 0 ? (
               <tr>
                 <td colSpan={4} className="py-8 text-center text-zinc-500 dark:text-zinc-500">
-                  No stuck pull requests. All good!
+                  {normalizedQuery
+                    ? `No stuck pull requests found matching "${searchQuery}"`
+                    : "No stuck pull requests. All good!"}
                 </td>
               </tr>
             ) : (
-              prs.map((pr) => {
+              filteredPrs.map((pr) => {
                 const repoFullName =
                   pr.repository?.fullName ||
                   `standard/${pr.repository?.name}`;

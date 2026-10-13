@@ -37,7 +37,9 @@ Restart the development server after changing environment variables. This value 
 
 - **Summary cards:** total repositories, inactive repositories, open PRs, stuck PRs, and active developers.
 - **Developer activity table:** GitHub avatar, PRs opened, PRs reviewed, and active repositories.
+- **Repository list:** filter all synced repositories or inactive repositories, with contributor, PR count, health-check badges, and last-push date.
 - **Stuck PR table:** title, repository, author, and a link that opens the pull request on GitHub.
+- **Search and sorting:** search developers by username and repositories by name/full name; sort developers by opened PRs, reviewed PRs, or commits, and repositories by recent push, open PR count, or name.
 - **Sync Data:** requests a sync and refreshes the displayed metrics and tables when it completes.
 - **Theme toggle:** switches between light and dark themes and saves the selection in browser `localStorage`; new users start in light mode.
 - **Responsive layout:** cards and tables adapt to mobile, tablet, desktop, and ultrawide widths. Tables can scroll horizontally on narrow screens.
