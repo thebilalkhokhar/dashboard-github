@@ -25,10 +25,12 @@ app.get("/health", (req, res) => {
 const syncRoutes = require("./routes/syncRoutes");
 const repoRoutes = require("./routes/repoRoutes");
 const prRoutes = require("./routes/prRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 // Routes mapping
 app.use("/api/sync", syncRoutes);
 app.use("/api/repos", repoRoutes);
 app.use("/api/prs", prRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 module.exports = app;
