@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-require("./User"); // User will be referenced in the Repository schema, so we need to ensure it's loaded
 
 const repoSchema = new mongoose.Schema(
   {
@@ -7,11 +6,12 @@ const repoSchema = new mongoose.Schema(
     name: { type: String, required: true, index: true },
     fullName: { type: String, required: true },
     team: { type: String, default: null },
-    manualOwner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
+    topContributor: {
+      username: { type: String },
+      avatarUrl: { type: String },
+      commitsCount: { type: Number, default: 0 },
     },
+    openPrsCount: { type: Number, default: 0 },
     lastPushedAt: { type: Date, index: true },
     isInactive: { type: Boolean, default: false },
     healthChecks: {

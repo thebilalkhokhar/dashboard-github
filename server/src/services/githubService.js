@@ -1,6 +1,7 @@
 const { Octokit } = require("@octokit/rest");
 const Repository = require("../models/Repository");
 const PullRequest = require("../models/PullRequest");
+const DeveloperActivity = require("../models/DeveloperActivity");
 
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
@@ -47,11 +48,24 @@ const syncRepositories = async (owner) => {
 
   for (const repo of reposData) {
     const isInactive = checkIsInactive(repo.pushed_at);
+    const { data: contributors } = await octokit.rest.repos.listContributors({
+      owner,
+      repo: repo.name,
+      per_page: 100,
+    });
+    const primaryContributor = contributors[0];
 
     const updateDoc = {
       githubRepoId: repo.id,
       name: repo.name,
       fullName: repo.full_name,
+      topContributor: primaryContributor
+        ? {
+            username: primaryContributor.login,
+            avatarUrl: primaryContributor.avatar_url,
+            commitsCount: primaryContributor.contributions,
+          }
+        : { username: null, avatarUrl: null, commitsCount: 0 },
       lastPushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null,
       isInactive,
       healthChecks: {
@@ -89,6 +103,10 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
 
   for (const pr of pulls) {
     const isStuck = pr.state === "open" && checkIsStuck(pr.created_at);
+    const previousPR = await PullRequest.findOne({
+      repository: repoDoc._id,
+      prNumber: pr.number,
+    }).lean();
 
     const updateDoc = {
       prNumber: pr.number,
@@ -109,7 +127,56 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
     savedPRs.push(saved);
+
+    const lastActiveAt = new Date(pr.updated_at || pr.created_at);
+    const repoName = repoDoc.name;
+    const authorUsername = pr.user?.login;
+
+    if (authorUsername) {
+      await DeveloperActivity.findOneAndUpdate(
+        { developerUsername: authorUsername },
+        {
+          $set: {
+            avatarUrl: pr.user.avatar_url,
+            lastActiveAt,
+          },
+          $inc: { prsOpenedCount: previousPR ? 0 : 1 },
+          $addToSet: { activeRepos: repoName },
+        },
+        { upsert: true, setDefaultsOnInsert: true },
+      );
+    }
+
+    const previousReviewers = new Set(previousPR?.reviewers || []);
+    const newReviewers = (pr.requested_reviewers || []).filter(
+      (reviewer) =>
+        reviewer.login && !previousReviewers.has(reviewer.login),
+    );
+
+    for (const reviewer of newReviewers) {
+      await DeveloperActivity.findOneAndUpdate(
+        { developerUsername: reviewer.login },
+        {
+          $set: {
+            lastActiveAt,
+            ...(reviewer.avatar_url && { avatarUrl: reviewer.avatar_url }),
+          },
+          $inc: { prsReviewedCount: 1 },
+          $addToSet: { activeRepos: repoName },
+        },
+        { upsert: true, setDefaultsOnInsert: true },
+      );
+    }
   }
+
+  await Repository.updateOne(
+    { _id: repoDoc._id },
+    {
+      $set: {
+        openPrsCount: pulls.filter((pr) => pr.state === "open").length,
+      },
+    },
+  );
 
   return savedPRs;
 };
