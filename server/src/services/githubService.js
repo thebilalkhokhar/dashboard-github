@@ -112,6 +112,7 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
       prNumber: pr.number,
       repository: repoDoc._id,
       title: pr.title,
+      htmlUrl: pr.html_url,
       authorGithubId: pr.user?.login || "unknown",
       reviewers: pr.requested_reviewers?.map((r) => r.login) || [],
       state: pr.state,

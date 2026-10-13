@@ -10,6 +10,7 @@ const pullRequestSchema = new mongoose.Schema(
       index: true,
     },
     title: { type: String, required: true },
+    htmlUrl: { type: String },
     authorGithubId: { type: String, required: true, index: true },
     reviewers: [{ type: String }],
     state: {

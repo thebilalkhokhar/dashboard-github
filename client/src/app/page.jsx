@@ -79,9 +79,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Navbar onSyncComplete={loadData} />
 
-      <main className="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+      <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 flex-1 space-y-8">
         {/* Metric Cards Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <MetricCard
             title="Total Repos"
             value={overview?.totalRepos}
@@ -117,7 +117,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Data Tables Grid */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 items-start">
           <DeveloperTable developers={developers} loading={loading} />
           <StuckPrsTable prs={stuckPrs} loading={loading} />
         </section>

@@ -35,7 +35,7 @@ export default function StuckPrsTable({ prs = [], loading }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full min-w-[500px] text-left text-xs">
           <thead className="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800">
             <tr>
               <th className="py-3 px-5">Title</th>
@@ -52,31 +52,49 @@ export default function StuckPrsTable({ prs = [], loading }) {
                 </td>
               </tr>
             ) : (
-              prs.map((pr) => (
-                <tr
-                  key={pr._id}
-                  className="hover:bg-slate-800/40 transition-colors"
-                >
-                  <td className="py-3.5 px-5 font-medium text-white max-w-xs truncate">
-                    #{pr.prNumber} {pr.title}
-                  </td>
-                  <td className="py-3.5 px-5 text-slate-400">
-                    {pr.repository?.name || "Unknown"}
-                  </td>
-                  <td className="py-3.5 px-5">@{pr.author?.username}</td>
-                  <td className="py-3.5 px-5 text-right">
-                    <a
-                      href={pr.htmlUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 hover:underline"
+              prs.map((pr) => {
+                const repoFullName =
+                  pr.repository?.fullName ||
+                  `standard/${pr.repository?.name}`;
+                const link =
+                  pr.htmlUrl ||
+                  `https://github.com/${repoFullName}/pull/${pr.prNumber}`;
+                const author =
+                  pr.authorGithubId ||
+                  pr.author?.username ||
+                  pr.author?.login ||
+                  pr.author ||
+                  "unknown";
+
+                return (
+                  <tr
+                    key={pr._id}
+                    className="hover:bg-slate-800/40 transition-colors"
+                  >
+                    <td
+                      title={`#${pr.prNumber} ${pr.title}`}
+                      className="max-w-[200px] truncate py-3.5 px-5 font-medium text-white sm:max-w-[280px]"
                     >
-                      View
-                      <ArrowSquareOut size={13} />
-                    </a>
-                  </td>
-                </tr>
-              ))
+                      #{pr.prNumber} {pr.title}
+                    </td>
+                    <td className="py-3.5 px-5 text-slate-400">
+                      {pr.repository?.name || "Unknown"}
+                    </td>
+                    <td className="py-3.5 px-5">@{author}</td>
+                    <td className="py-3.5 px-5 text-right">
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 whitespace-nowrap text-indigo-400 hover:text-indigo-300 hover:underline"
+                      >
+                        View
+                        <ArrowSquareOut size={13} />
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

@@ -10,7 +10,7 @@ export default function MetricCard({
   const displayValue = value ?? 0;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5 shadow-sm hover:border-slate-700 transition-all">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">

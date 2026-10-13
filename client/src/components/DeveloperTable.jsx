@@ -32,7 +32,7 @@ export default function DeveloperTable({ developers = [], loading }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full min-w-[500px] text-left text-xs">
           <thead className="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-800">
             <tr>
               <th className="py-3 px-5">Developer</th>
@@ -70,19 +70,19 @@ export default function DeveloperTable({ developers = [], loading }) {
                     </div>
                   </td>
                   <td className="py-3.5 px-5 text-center">
-                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
                       <GitPullRequest size={13} weight="bold" />
                       {dev.prsOpenedCount}
                     </span>
                   </td>
                   <td className="py-3.5 px-5 text-center">
-                    <span className="inline-flex items-center gap-1 font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
                       <GitMerge size={13} weight="bold" />
                       {dev.prsReviewedCount}
                     </span>
                   </td>
                   <td className="py-3.5 px-5">
-                    <div className="flex flex-wrap gap-1 max-w-sm">
+                    <div className="flex max-w-xs flex-wrap gap-1 xl:max-w-md">
                       {dev.activeRepos?.map((repo) => (
                         <span
                           key={repo}
