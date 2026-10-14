@@ -27,7 +27,7 @@ const checkIsStuck = (createdAt) => {
 /**
  * Repositories fetch and upsert
  */
-const syncRepositories = async (owner) => {
+const syncRepositories = async (owner, repoLimit) => {
   // if owner is an org, use listForOrg, else use listForUser
   let reposData = [];
   try {
@@ -45,8 +45,12 @@ const syncRepositories = async (owner) => {
   }
 
   const savedRepos = [];
+  const reposToSync =
+    Number.isInteger(repoLimit) && repoLimit > 0
+      ? reposData.slice(0, repoLimit)
+      : reposData;
 
-  for (const repo of reposData) {
+  for (const repo of reposToSync) {
     const isInactive = checkIsInactive(repo.pushed_at);
     const { data: contributors } = await octokit.rest.repos.listContributors({
       owner,
@@ -85,7 +89,10 @@ const syncRepositories = async (owner) => {
     savedRepos.push(saved);
   }
 
-  return savedRepos;
+  return {
+    savedRepos,
+    totalAvailableRepos: reposData.length,
+  };
 };
 
 /**
@@ -191,15 +198,22 @@ const syncAllData = async (targetOwner) => {
     throw new Error("Target GitHub owner/username must be defined.");
   }
 
+  const repoLimit = Number(process.env.GITHUB_REPO_LIMIT);
+  const hasRepoLimit = Number.isInteger(repoLimit) && repoLimit > 0;
   console.log(`[Sync] Fetching repositories for: ${owner}...`);
-  const repos = await syncRepositories(owner);
-  console.log(`[Sync] Repositories fetched: ${repos.length}`);
+  const { savedRepos: reposToProcess, totalAvailableRepos } =
+    await syncRepositories(owner, hasRepoLimit ? repoLimit : undefined);
+  console.log(`[Sync] Repositories fetched: ${totalAvailableRepos}`);
 
-  // Point 2: Limit the number of repos to process for testing purposes. For example, only process the first 5 repos.
-  const reposToProcess = repos.slice(0, 5);
-  console.log(
-    `[Sync] Processing first ${reposToProcess.length} repos for testing...`,
-  );
+  if (hasRepoLimit) {
+    console.log(
+      `[Sync] Processing ${reposToProcess.length} of ${totalAvailableRepos} repositories (GITHUB_REPO_LIMIT=${repoLimit})...`,
+    );
+  } else {
+    console.log(
+      `[Sync] Processing all ${reposToProcess.length} available repositories...`,
+    );
+  }
 
   let totalPrCount = 0;
 
@@ -220,7 +234,7 @@ const syncAllData = async (targetOwner) => {
 
   return {
     syncedReposCount: reposToProcess.length,
-    totalAvailableRepos: repos.length,
+    totalAvailableRepos,
     syncedPrsCount: totalPrCount,
   };
 };

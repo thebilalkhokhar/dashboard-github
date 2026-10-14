@@ -24,17 +24,20 @@ NODE_ENV=development
 MONGO_URI=mongodb://127.0.0.1:27017/github-analytics
 GITHUB_TOKEN=replace-with-a-read-only-github-token
 GITHUB_TARGET_OWNER=fastify
+# Optional positive integer; unset to process all fetched repositories
+# GITHUB_REPO_LIMIT=5
 CLIENT_URL=http://localhost:3000
 ```
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `MONGO_URI` | Yes | MongoDB connection string |
-| `GITHUB_TOKEN` | For GitHub sync | Octokit authentication token; keep server-side |
-| `PORT` | No | HTTP port; defaults to `5000` |
-| `NODE_ENV` | No | Runtime mode displayed in the startup log; defaults to `development` |
-| `GITHUB_TARGET_OWNER` | For sync fallback | Organization or username used when the sync request omits `owner` |
-| `CLIENT_URL` | No | Allowed CORS origin; defaults to `http://localhost:3000` |
+| Variable              | Required        | Purpose                                                                                              |
+| --------------------- | --------------- | ---------------------------------------------------------------------------------------------------- |
+| `MONGO_URI`           | Yes             | MongoDB connection string                                                                            |
+| `GITHUB_TOKEN`        | For GitHub sync | Octokit authentication token; keep server-side                                                       |
+| `PORT`                | No              | HTTP port; defaults to `5000`                                                                        |
+| `NODE_ENV`            | No              | Runtime mode displayed in the startup log; defaults to `development`                                 |
+| `GITHUB_TARGET_OWNER` | Yes, for sync   | Organization or username whose repositories are synced                                               |
+| `GITHUB_REPO_LIMIT`   | No              | Positive integer limit for repositories processed; unset or blank processes all fetched repositories |
+| `CLIENT_URL`          | No              | Allowed CORS origin; defaults to `http://localhost:3000`                                             |
 
 Start in development mode:
 
@@ -46,10 +49,10 @@ The server connects to MongoDB before listening. Check its health at [http://loc
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start `index.js` with Nodemon |
-| `npm test` | Placeholder script; no automated server tests are configured yet |
+| Command       | Description                                                      |
+| ------------- | ---------------------------------------------------------------- |
+| `npm run dev` | Start `index.js` with Nodemon                                    |
+| `npm test`    | Placeholder script; no automated server tests are configured yet |
 
 ## API
 
@@ -72,45 +75,37 @@ Returns a simple process check:
 
 `POST /api/sync/trigger`
 
-Optional JSON body:
-
-```json
-{
-  "owner": "fastify"
-}
-```
-
-When `owner` is omitted, the service uses `GITHUB_TARGET_OWNER`. A successful response includes a message and counts for repositories processed, repositories available, and PRs synced. The dashboard button currently supplies `fastify` explicitly.
+The endpoint uses `GITHUB_TARGET_OWNER` from the server environment; the dashboard does not send an owner. A successful response includes a message and counts for repositories processed, repositories available, and PRs synced.
 
 The sync service:
 
 1. Requests up to 100 repositories for the organization, falling back to a user repository request if the organization request fails.
-2. Fetches contributor information and upserts repository records.
-3. Processes the first 5 repositories returned (a current testing limit).
-4. Requests up to 50 pull requests per repository with `state=all`, then upserts PR records and developer activity.
+2. Processes all fetched repositories by default, or up to `GITHUB_REPO_LIMIT` when it is set to a positive integer.
+3. Fetches contributor information and upserts repository records for the selected repositories.
+4. Requests up to 50 pull requests per processed repository with `state=all`, then upserts PR records and developer activity.
 
 The service does not currently paginate beyond these requested pages. GitHub API rate limits and permissions apply.
 
 ### Analytics
 
-| Endpoint | Query parameters | Result |
-| --- | --- | --- |
-| `GET /api/analytics/overview` | — | Totals for repositories, inactive repositories, open PRs, stuck PRs, and developers |
+| Endpoint                        | Query parameters                            | Result                                                                                                     |
+| ------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `GET /api/analytics/overview`   | —                                           | Totals for repositories, inactive repositories, open PRs, stuck PRs, and developers                        |
 | `GET /api/analytics/developers` | `includeBots=true`, `sortBy=prsOpenedCount` | Up to 50 developers, sorted descending by the selected field; bots are excluded unless explicitly included |
 
 ### Repositories
 
-| Endpoint | Query parameters | Result |
-| --- | --- | --- |
-| `GET /api/repos` | `search`, `isInactive=true\|false`, `team` | Repositories matching the supplied filters |
-| `GET /api/repos/inactive` | — | Repositories marked inactive |
+| Endpoint                  | Query parameters                           | Result                                     |
+| ------------------------- | ------------------------------------------ | ------------------------------------------ |
+| `GET /api/repos`          | `search`, `isInactive=true\|false`, `team` | Repositories matching the supplied filters |
+| `GET /api/repos/inactive` | —                                          | Repositories marked inactive               |
 
 ### Pull requests
 
-| Endpoint | Query parameters | Result |
-| --- | --- | --- |
-| `GET /api/prs` | `repoId`, `state` | Pull requests matching the optional repository and state filters |
-| `GET /api/prs/stuck` | — | Open PRs marked as stuck, with repository `name`, `fullName`, and `isInactive` populated |
+| Endpoint             | Query parameters  | Result                                                                                   |
+| -------------------- | ----------------- | ---------------------------------------------------------------------------------------- |
+| `GET /api/prs`       | `repoId`, `state` | Pull requests matching the optional repository and state filters                         |
+| `GET /api/prs/stuck` | —                 | Open PRs marked as stuck, with repository `name`, `fullName`, and `isInactive` populated |
 
 Collection responses use a common shape:
 
