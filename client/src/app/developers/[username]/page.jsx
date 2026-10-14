@@ -14,6 +14,9 @@ import {
   GitPullRequest,
 } from "@phosphor-icons/react";
 import { fetchDeveloperDetail } from "@/lib/api";
+import TablePagination from "@/components/TablePagination";
+
+const PAGE_SIZE = 10;
 
 const formatLastActive = (value) => {
   if (!value) return "No activity recorded";
@@ -92,6 +95,7 @@ function DeveloperProfileContent() {
   const { username } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ page: 1, username: null });
 
   useEffect(() => {
     let isCurrent = true;
@@ -142,6 +146,13 @@ function DeveloperProfileContent() {
   }
 
   const { developer, pullRequests = [] } = profile;
+  const pageCount = Math.max(1, Math.ceil(pullRequests.length / PAGE_SIZE));
+  const requestedPage = pagination.username === username ? pagination.page : 1;
+  const currentPage = Math.min(requestedPage, pageCount);
+  const visiblePullRequests = pullRequests.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
   const stats = [
     { label: "PRs Opened", value: developer.prsOpenedCount ?? 0 },
     { label: "PRs Reviewed", value: developer.prsReviewedCount ?? 0 },
@@ -266,7 +277,7 @@ function DeveloperProfileContent() {
               </thead>
               <tbody className="divide-y divide-zinc-200 text-zinc-700 dark:divide-zinc-800/60 dark:text-zinc-300">
                 {pullRequests.length ? (
-                  pullRequests.map((pullRequest) => {
+                  visiblePullRequests.map((pullRequest) => {
                     const state = pullRequestState(pullRequest.state);
                     const StateIcon = state.Icon;
 
@@ -318,7 +329,7 @@ function DeveloperProfileContent() {
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-zinc-700 hover:underline dark:text-zinc-300"
                             >
-                              View ↗
+                              View
                               <ArrowSquareOut size={13} aria-hidden="true" />
                             </a>
                           ) : (
@@ -341,6 +352,17 @@ function DeveloperProfileContent() {
               </tbody>
             </table>
           </div>
+          <TablePagination
+            page={currentPage}
+            pageSize={PAGE_SIZE}
+            totalCount={pullRequests.length}
+            onPageChange={(nextPage) =>
+              setPagination({
+                page: Math.min(Math.max(nextPage, 1), pageCount),
+                username,
+              })
+            }
+          />
         </section>
       </div>
     </main>
