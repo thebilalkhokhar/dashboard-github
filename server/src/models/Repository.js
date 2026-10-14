@@ -5,6 +5,7 @@ const repoSchema = new mongoose.Schema(
     githubRepoId: { type: Number, required: true, unique: true, index: true },
     name: { type: String, required: true, index: true },
     fullName: { type: String, required: true },
+    isPrivate: { type: Boolean, default: false },
     team: { type: String, default: null },
     topContributor: {
       username: { type: String },

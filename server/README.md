@@ -99,6 +99,7 @@ GitHub API rate limits and permissions apply. `GITHUB_REPO_LIMIT` limits reposit
 | ------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------- |
 | `GET /api/repos`          | `page=1`, `limit=100`, `search`, `isInactive=true\|false`, `team`, `sortBy` | Paginated repositories matching the supplied filters |
 | `GET /api/repos/inactive` | `page=1`, `limit=100`, `search`, `sortBy`                                   | Paginated inactive repositories                      |
+| `GET /api/repos/:repoName` | —                                                                          | Repository details and all pull requests for that repository |
 
 Repository endpoints return `pagination` metadata (`page`, `limit`, `totalPages`, and `totalCount`). The dashboard requests up to 100 saved repositories per page; changing pages reads the next page from MongoDB and does not trigger a GitHub sync.
 
@@ -123,7 +124,7 @@ On request errors, handlers return `success: false` and a `message`; sync errors
 
 ## Data models
 
-- **Repository:** GitHub repository ID, name/full name, team, all contributors and their commit counts, top contributor, open PR count, last push time, inactivity status, and health-check flags.
+- **Repository:** GitHub repository ID, name/full name, visibility, team, all contributors and their commit counts, top contributor, open PR count, last push time, inactivity status, and health-check flags.
 - **PullRequest:** PR number, repository reference, title, GitHub URL, author GitHub login, requested reviewers, state, stuck status, and opened/merged/closed timestamps.
 - **DeveloperActivity:** developer username, avatar, total commits and per-repository contribution counts, PR-opened and PR-reviewed counts, active repositories, and last active time.
 - **User:** GitHub ID, username, avatar, role, team, and active status. The current dashboard API does not implement user authentication or role-based access.

@@ -187,21 +187,26 @@ export default function RepositoryTable({
                     className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                   >
                     <td className="px-4 py-3">
-                      <a
-                        href={`https://github.com/${fullName}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group inline-flex max-w-[220px] items-center gap-1.5"
-                      >
-                        <span className="truncate font-medium text-zinc-900 group-hover:underline dark:text-white">
+                      <div className="flex max-w-[240px] items-center gap-1.5">
+                        <Link
+                          href={`/repos/${encodeURIComponent(repo.name)}`}
+                          className="group min-w-0 truncate font-medium text-zinc-900 hover:underline dark:text-white"
+                        >
                           {repo.name}
-                        </span>
-                        <ArrowSquareOut
-                          size={12}
-                          className="shrink-0 text-zinc-400"
-                          aria-hidden="true"
-                        />
-                      </a>
+                        </Link>
+                        <a
+                          href={`https://github.com/${fullName}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open ${fullName} on GitHub`}
+                          className="shrink-0 text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+                        >
+                          <ArrowSquareOut
+                            size={12}
+                            aria-hidden="true"
+                          />
+                        </a>
+                      </div>
                       <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                         {fullName}
                       </p>

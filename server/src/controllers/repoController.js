@@ -1,4 +1,5 @@
 const Repository = require("../models/Repository");
+const PullRequest = require("../models/PullRequest");
 
 const getRepositories = async (req, res, inactiveOnly = false) => {
   try {
@@ -66,7 +67,43 @@ const getAllRepos = (req, res) => getRepositories(req, res);
  */
 const getInactiveRepos = (req, res) => getRepositories(req, res, true);
 
+const getRepoDetail = async (req, res) => {
+  try {
+    const escapedRepoName = req.params.repoName.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&",
+    );
+    const repo = await Repository.findOne({
+      $or: [
+        { name: req.params.repoName },
+        { fullName: new RegExp(escapedRepoName, "i") },
+      ],
+    });
+
+    if (!repo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Repository not found" });
+    }
+
+    const pullRequests = await PullRequest.find({ repository: repo._id }).sort({
+      openedAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        repository: repo,
+        pullRequests,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllRepos,
   getInactiveRepos,
+  getRepoDetail,
 };

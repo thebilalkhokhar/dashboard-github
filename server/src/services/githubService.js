@@ -62,6 +62,7 @@ const syncRepositories = async (owner, repoLimit) => {
       githubRepoId: repo.id,
       name: repo.name,
       fullName: repo.full_name,
+      isPrivate: Boolean(repo.private),
       topContributor: primaryContributor
         ? {
             username: primaryContributor.login,

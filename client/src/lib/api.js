@@ -37,6 +37,11 @@ export const fetchRepositories = async ({
   return res.data;
 };
 
+export const fetchRepositoryDetail = async (repoName) => {
+  const res = await api.get(`/repos/${encodeURIComponent(repoName)}`);
+  return res.data.data;
+};
+
 export const triggerSync = async () => {
   const res = await api.post("/sync/trigger");
   return res.data;

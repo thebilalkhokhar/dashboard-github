@@ -38,6 +38,7 @@ Restart the development server after changing environment variables. This value 
 - **Summary cards:** total repositories, inactive repositories, open PRs, stuck PRs, and active developers.
 - **Developer activity table:** GitHub avatar, PRs opened, PRs reviewed, and active repositories.
 - **Repository list:** filter all synced repositories or inactive repositories, with contributor, PR count, health-check badges, and last-push date.
+- **Repository detail:** open a repository from the list to view its visibility, health checks, contributors, and pull requests, with client-side pagination and stuck-PR filtering.
 - **Stuck PR table:** title, repository, author, and a link that opens the pull request on GitHub.
 - **Search and sorting:** search developers by username and repositories by name/full name; sort developers by opened PRs, reviewed PRs, or commits, and repositories by recent push, open PR count, or name.
 - **Sync Data:** requests a sync and refreshes the displayed metrics and tables when it completes.
@@ -54,6 +55,7 @@ The Axios client reads `NEXT_PUBLIC_API_BASE_URL` and falls back to `http://loca
 | --- | --- | --- |
 | `GET` | `/analytics/overview` | Populate the summary cards |
 | `GET` | `/analytics/developers` | Populate the developer table |
+| `GET` | `/repos/:repoName` | Populate the repository detail page |
 | `GET` | `/prs/stuck` | Populate the stuck PR table |
 | `POST` | `/sync/trigger` | Start a sync; currently sends `{"owner":"fastify"}` |
 
