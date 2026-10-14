@@ -2,6 +2,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import TablePagination from "@/components/TablePagination";
 import {
   MagnifyingGlass,
   Users,
@@ -15,12 +16,47 @@ const sortOptions = [
   { value: "commitsCount", label: "Most Commits" },
 ];
 
+const PAGE_SIZE = 10;
+
 export default function DeveloperTable({
   developers = [],
   loading,
   searchQuery = "",
 }) {
   const [sortBy, setSortBy] = React.useState("prsOpenedCount");
+  const [pagination, setPagination] = React.useState({
+    page: 1,
+    searchQuery,
+    sortBy,
+  });
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+
+  const visibleDevelopers = React.useMemo(
+    () =>
+      developers
+        .filter((developer) =>
+          developer.developerUsername
+            ?.toLocaleLowerCase()
+            .includes(normalizedQuery),
+        )
+        .sort(
+          (a, b) => (Number(b[sortBy]) || 0) - (Number(a[sortBy]) || 0),
+        ),
+    [developers, normalizedQuery, sortBy],
+  );
+  const pageCount = Math.max(1, Math.ceil(visibleDevelopers.length / PAGE_SIZE));
+  const currentPage =
+    pagination.searchQuery === searchQuery && pagination.sortBy === sortBy
+      ? Math.min(pagination.page, pageCount)
+      : 1;
+  const pageDevelopers = React.useMemo(
+    () =>
+      visibleDevelopers.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE,
+      ),
+    [currentPage, visibleDevelopers],
+  );
 
   if (loading) {
     return (
@@ -37,15 +73,6 @@ export default function DeveloperTable({
       </div>
     );
   }
-
-  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const visibleDevelopers = developers
-    .filter((developer) =>
-      developer.developerUsername
-        ?.toLocaleLowerCase()
-        .includes(normalizedQuery),
-    )
-    .sort((a, b) => (Number(b[sortBy]) || 0) - (Number(a[sortBy]) || 0));
 
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -111,7 +138,7 @@ export default function DeveloperTable({
                 </td>
               </tr>
             ) : (
-              visibleDevelopers.map((dev) => (
+              pageDevelopers.map((dev) => (
                 <tr
                   key={dev._id}
                   className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
@@ -167,6 +194,18 @@ export default function DeveloperTable({
           </tbody>
         </table>
       </div>
+      <TablePagination
+        page={currentPage}
+        pageSize={PAGE_SIZE}
+        totalCount={visibleDevelopers.length}
+        onPageChange={(nextPage) =>
+          setPagination({
+            page: Math.min(Math.max(nextPage, 1), pageCount),
+            searchQuery,
+            sortBy,
+          })
+        }
+      />
     </div>
   );
 }

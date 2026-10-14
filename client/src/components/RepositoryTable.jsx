@@ -6,12 +6,11 @@ import {
   ArrowSquareOut,
   CheckCircle,
   ClockCountdown,
-  CaretLeft,
-  CaretRight,
   FolderSimple,
   MagnifyingGlass,
   XCircle,
 } from "@phosphor-icons/react";
+import TablePagination from "@/components/TablePagination";
 
 const formatDate = (value) => {
   if (!value) return "No push data";
@@ -49,8 +48,8 @@ export default function RepositoryTable({
   inactiveCount = 0,
   onFilterChange,
   page = 1,
-  pageSize = 100,
-  totalPages = 0,
+  pageSize = 10,
+  pageOffset = 0,
   totalCount = 0,
   onPageChange,
   sortBy = "lastPushedAt",
@@ -79,11 +78,15 @@ export default function RepositoryTable({
         : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
     }`;
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const visibleRepositories = repositories;
-  const pageCount = Math.max(totalPages, 1);
-  const firstVisible = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const lastVisible = Math.min(page * pageSize, totalCount);
-
+  const firstRepositoryIndex = (page - 1) * pageSize;
+  const repositoryBatchOffset = Math.max(
+    0,
+    firstRepositoryIndex - pageOffset,
+  );
+  const visibleRepositories = repositories.slice(
+    repositoryBatchOffset,
+    repositoryBatchOffset + pageSize,
+  );
   return (
     <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 p-5 dark:border-zinc-800">
@@ -183,7 +186,7 @@ export default function RepositoryTable({
                     key={repo._id || repo.githubRepoId || fullName}
                     className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                   >
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3">
                       <a
                         href={`https://github.com/${fullName}`}
                         target="_blank"
@@ -203,7 +206,7 @@ export default function RepositoryTable({
                         {fullName}
                       </p>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3">
                       {repo.isInactive ? (
                         <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
                           <ClockCountdown size={12} weight="bold" />
@@ -215,45 +218,50 @@ export default function RepositoryTable({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3">
                       {contributors.length ? (
-                        <div className="flex max-w-[360px] flex-wrap gap-1">
-                          {contributors.map((contributor) => (
+                        <div className="flex items-center -space-x-2">
+                          {contributors.slice(0, 4).map((contributor) => (
                             <Link
                               key={contributor.username}
                               href={`/developers/${contributor.username}`}
-                              title={`${contributor.commitsCount ?? 0} commits`}
-                              className="inline-flex max-w-full items-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-1 text-[10px] font-medium text-zinc-700 hover:border-zinc-400 hover:text-black dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white"
+                              title={`@${contributor.username} - ${contributor.commitsCount ?? 0} commits`}
+                              aria-label={`@${contributor.username}, ${contributor.commitsCount ?? 0} commits`}
+                              className="relative rounded-full ring-2 ring-white transition-transform hover:z-10 hover:scale-110 dark:ring-zinc-950"
                             >
-                              {contributor.avatarUrl ? (
-                                <Image
-                                  src={contributor.avatarUrl}
-                                  alt=""
-                                  width={16}
-                                  height={16}
-                                  unoptimized
-                                  className="h-4 w-4 shrink-0 rounded-full object-cover"
-                                />
-                              ) : null}
-                              <span className="max-w-[110px] truncate">
-                                @{contributor.username}
-                              </span>
-                              <span className="whitespace-nowrap text-zinc-500">
-                                {contributor.commitsCount ?? 0}
-                              </span>
+                              <Image
+                                src={
+                                  contributor.avatarUrl ||
+                                  "https://github.com/ghost.png"
+                                }
+                                alt=""
+                                width={24}
+                                height={24}
+                                unoptimized
+                                className="h-6 w-6 rounded-full object-cover"
+                              />
                             </Link>
                           ))}
+                          {contributors.length > 4 ? (
+                            <span
+                              title={`${contributors.length - 4} more contributors`}
+                              aria-label={`${contributors.length - 4} more contributors`}
+                              className="relative inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-zinc-100 px-1 text-[10px] font-semibold text-zinc-600 ring-2 ring-white dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-950"
+                            >
+                              +{contributors.length - 4}
+                            </span>
+                          ) : null}
                         </div>
                       ) : (
                         <span className="text-zinc-500">None</span>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 text-center">
+                    <td className="px-4 py-3 text-center">
                       <span className="inline-flex min-w-8 justify-center rounded-full bg-zinc-100 px-2 py-1 font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                         {repo.openPrsCount ?? 0}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         <HealthCheck
                           label="README"
@@ -269,7 +277,7 @@ export default function RepositoryTable({
                         />
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3.5 text-zinc-500 dark:text-zinc-400">
+                    <td className="whitespace-nowrap px-4 py-3 text-zinc-500 dark:text-zinc-400">
                       {formatDate(repo.lastPushedAt)}
                     </td>
                   </tr>
@@ -280,38 +288,12 @@ export default function RepositoryTable({
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-          Showing {firstVisible}-{lastVisible} of {totalCount} repositories
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Previous repository page"
-            title="Previous page"
-            disabled={page <= 1}
-            onClick={() => onPageChange?.(page - 1)}
-            className="inline-flex items-center gap-1 rounded border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-          >
-            <CaretLeft size={14} aria-hidden="true" />
-            Previous
-          </button>
-          <span className="min-w-[72px] text-center text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
-            Page {page} of {pageCount}
-          </span>
-          <button
-            type="button"
-            aria-label="Next repository page"
-            title="Next page"
-            disabled={page >= pageCount}
-            onClick={() => onPageChange?.(page + 1)}
-            className="inline-flex items-center gap-1 rounded border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-          >
-            Next
-            <CaretRight size={14} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
+      <TablePagination
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={(nextPage) => onPageChange?.(nextPage)}
+      />
     </section>
   );
 }

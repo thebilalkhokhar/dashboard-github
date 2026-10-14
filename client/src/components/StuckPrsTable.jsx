@@ -1,12 +1,59 @@
 "use client";
 import React from "react";
 import { WarningCircle, ArrowSquareOut } from "@phosphor-icons/react";
+import TablePagination from "@/components/TablePagination";
+
+const PAGE_SIZE = 10;
 
 export default function StuckPrsTable({
   prs = [],
   loading,
   searchQuery = "",
 }) {
+  const [pagination, setPagination] = React.useState({ page: 1, searchQuery });
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+
+  const filteredPrs = React.useMemo(
+    () =>
+      prs.filter((pr) => {
+        if (!normalizedQuery) return true;
+
+        const author =
+          pr.authorGithubId ||
+          pr.author?.username ||
+          pr.author?.login ||
+          pr.author ||
+          "";
+        const searchableFields = [
+          pr.title,
+          pr.prNumber,
+          author,
+          pr.repository?.name,
+          pr.repository?.fullName,
+        ];
+
+        return searchableFields.some((field) =>
+          String(field ?? "")
+            .toLocaleLowerCase()
+            .includes(normalizedQuery),
+        );
+      }),
+    [normalizedQuery, prs],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredPrs.length / PAGE_SIZE));
+  const currentPage =
+    pagination.searchQuery === searchQuery
+      ? Math.min(pagination.page, pageCount)
+      : 1;
+  const pagePrs = React.useMemo(
+    () =>
+      filteredPrs.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE,
+      ),
+    [currentPage, filteredPrs],
+  );
+
   if (loading) {
     return (
       <div className="rounded-xl border border-zinc-200 bg-white p-6 animate-pulse dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -19,31 +66,6 @@ export default function StuckPrsTable({
       </div>
     );
   }
-
-  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const filteredPrs = prs.filter((pr) => {
-    if (!normalizedQuery) return true;
-
-    const author =
-      pr.authorGithubId ||
-      pr.author?.username ||
-      pr.author?.login ||
-      pr.author ||
-      "";
-    const searchableFields = [
-      pr.title,
-      pr.prNumber,
-      author,
-      pr.repository?.name,
-      pr.repository?.fullName,
-    ];
-
-    return searchableFields.some((field) =>
-      String(field ?? "")
-        .toLocaleLowerCase()
-        .includes(normalizedQuery),
-    );
-  });
 
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -83,7 +105,7 @@ export default function StuckPrsTable({
                 </td>
               </tr>
             ) : (
-              filteredPrs.map((pr) => {
+              pagePrs.map((pr) => {
                 const repoFullName =
                   pr.repository?.fullName ||
                   `standard/${pr.repository?.name}`;
@@ -130,6 +152,17 @@ export default function StuckPrsTable({
           </tbody>
         </table>
       </div>
+      <TablePagination
+        page={currentPage}
+        pageSize={PAGE_SIZE}
+        totalCount={filteredPrs.length}
+        onPageChange={(nextPage) =>
+          setPagination({
+            page: Math.min(Math.max(nextPage, 1), pageCount),
+            searchQuery,
+          })
+        }
+      />
     </div>
   );
 }

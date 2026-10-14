@@ -20,7 +20,8 @@ import {
   MagnifyingGlass,
 } from "@phosphor-icons/react";
 
-const REPOSITORY_PAGE_SIZE = 100;
+const REPOSITORY_FETCH_PAGE_SIZE = 100;
+const TABLE_PAGE_SIZE = 10;
 
 export default function DashboardPage() {
   const [overview, setOverview] = useState(null);
@@ -29,17 +30,16 @@ export default function DashboardPage() {
   const [repositories, setRepositories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [repositoryPage, setRepositoryPage] = useState(1);
-  const [repositoryPageInfo, setRepositoryPageInfo] = useState({
-    page: 1,
-    limit: REPOSITORY_PAGE_SIZE,
-    totalCount: 0,
-    totalPages: 0,
-  });
+  const [repositoryPageInfo, setRepositoryPageInfo] = useState({ totalCount: 0 });
   const [inactiveOnly, setInactiveOnly] = useState(false);
   const [repositorySortBy, setRepositorySortBy] = useState("lastPushedAt");
   const [repositoryRefreshKey, setRepositoryRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [repositoriesLoading, setRepositoriesLoading] = useState(true);
+  const repositoryFetchPage =
+    Math.floor(
+      ((repositoryPage - 1) * TABLE_PAGE_SIZE) / REPOSITORY_FETCH_PAGE_SIZE,
+    ) + 1;
 
   const loadData = async () => {
     try {
@@ -112,8 +112,8 @@ export default function DashboardPage() {
           try {
             const response = await fetchRepositories({
               inactiveOnly,
-              page: repositoryPage,
-              limit: REPOSITORY_PAGE_SIZE,
+              page: repositoryFetchPage,
+              limit: REPOSITORY_FETCH_PAGE_SIZE,
               search: searchQuery.trim(),
               sortBy: repositorySortBy,
             });
@@ -140,7 +140,7 @@ export default function DashboardPage() {
     };
   }, [
     inactiveOnly,
-    repositoryPage,
+    repositoryFetchPage,
     repositoryRefreshKey,
     repositorySortBy,
     searchQuery,
@@ -219,9 +219,9 @@ export default function DashboardPage() {
           allCount={overview?.totalRepos ?? 0}
           inactiveCount={overview?.inactiveRepos ?? 0}
           onFilterChange={handleRepositoryFilterChange}
-          page={repositoryPageInfo.page || repositoryPage}
-          pageSize={repositoryPageInfo.limit || REPOSITORY_PAGE_SIZE}
-          totalPages={repositoryPageInfo.totalPages}
+          page={repositoryPage}
+          pageSize={TABLE_PAGE_SIZE}
+          pageOffset={(repositoryFetchPage - 1) * REPOSITORY_FETCH_PAGE_SIZE}
           totalCount={repositoryPageInfo.totalCount}
           onPageChange={setRepositoryPage}
           sortBy={repositorySortBy}
