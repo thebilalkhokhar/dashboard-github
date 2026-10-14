@@ -2,8 +2,7 @@ const { syncAllData } = require("../services/githubService");
 
 const triggerSync = async (req, res) => {
   try {
-    const { owner } = req.body;
-    const result = await syncAllData(owner);
+    const result = await syncAllData();
 
     return res.status(200).json({
       success: true,

@@ -30,7 +30,7 @@ export const fetchRepositories = async (inactiveOnly = false) => {
 };
 
 export const triggerSync = async () => {
-  const res = await api.post("/sync/trigger", { owner: "fastify" });
+  const res = await api.post("/sync/trigger");
   return res.data;
 };
 
