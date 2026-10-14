@@ -47,4 +47,9 @@ export const triggerSync = async () => {
   return res.data;
 };
 
+export const fetchSyncStatus = async () => {
+  const res = await api.get("/sync/status");
+  return res.data.data;
+};
+
 export default api;

@@ -30,7 +30,7 @@ const fetchAllPages = (endpoint, parameters) =>
 /**
  * Repositories fetch and upsert
  */
-const syncRepositories = async (owner, repoLimit) => {
+const syncRepositories = async (owner, repoLimit, onProgress) => {
   let reposData;
   try {
     reposData = await fetchAllPages(octokit.rest.repos.listForOrg, {
@@ -55,7 +55,19 @@ const syncRepositories = async (owner, repoLimit) => {
       ? reposData.slice(0, repoLimit)
       : reposData;
 
-  for (const repo of reposToSync) {
+  onProgress?.({
+    phase: "saving-repositories",
+    totalRepositories: reposToSync.length,
+  });
+
+  for (let i = 0; i < reposToSync.length; i++) {
+    const repo = reposToSync[i];
+    onProgress?.({
+      phase: "saving-repositories",
+      completedRepositories: i,
+      totalRepositories: reposToSync.length,
+      currentRepository: repo.name,
+    });
     const isInactive = checkIsInactive(repo.pushed_at);
     const contributors = await fetchAllPages(
       octokit.rest.repos.listContributors,
@@ -148,6 +160,12 @@ const syncRepositories = async (owner, repoLimit) => {
         options,
       );
     }
+    onProgress?.({
+      phase: "saving-repositories",
+      completedRepositories: i + 1,
+      totalRepositories: reposToSync.length,
+      currentRepository: repo.name,
+    });
   }
 
   return {
@@ -252,7 +270,7 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
  * Main Sync pipeline orchestrator
  */
 
-const syncAllData = async (targetOwner) => {
+const syncAllData = async (targetOwner, onProgress) => {
   const owner = targetOwner || process.env.GITHUB_TARGET_OWNER;
   if (!owner) {
     throw new Error("Target GitHub owner/username must be defined.");
@@ -261,8 +279,13 @@ const syncAllData = async (targetOwner) => {
   const repoLimit = Number(process.env.GITHUB_REPO_LIMIT);
   const hasRepoLimit = Number.isInteger(repoLimit) && repoLimit > 0;
   console.log(`[Sync] Fetching repositories for: ${owner}...`);
+  onProgress?.({ phase: "fetching-repositories" });
   const { savedRepos: reposToProcess, totalAvailableRepos } =
-    await syncRepositories(owner, hasRepoLimit ? repoLimit : undefined);
+    await syncRepositories(
+      owner,
+      hasRepoLimit ? repoLimit : undefined,
+      onProgress,
+    );
   console.log(`[Sync] Repositories fetched: ${totalAvailableRepos}`);
 
   if (hasRepoLimit) {
@@ -276,16 +299,34 @@ const syncAllData = async (targetOwner) => {
   }
 
   let totalPrCount = 0;
+  onProgress?.({
+    phase: "syncing-pull-requests",
+    completedRepositories: 0,
+    totalRepositories: reposToProcess.length,
+  });
 
-  // Point 1: console log for each repo being processed
   for (let i = 0; i < reposToProcess.length; i++) {
     const repo = reposToProcess[i];
+    onProgress?.({
+      phase: "syncing-pull-requests",
+      completedRepositories: i,
+      totalRepositories: reposToProcess.length,
+      currentRepository: repo.name,
+      syncedPullRequests: totalPrCount,
+    });
     console.log(
       `[Sync] (${i + 1}/${reposToProcess.length}) Fetching PRs for: ${repo.name}`,
     );
 
     const prs = await syncPullRequestsForRepo(owner, repo);
     totalPrCount += prs.length;
+    onProgress?.({
+      phase: "syncing-pull-requests",
+      completedRepositories: i + 1,
+      totalRepositories: reposToProcess.length,
+      currentRepository: repo.name,
+      syncedPullRequests: totalPrCount,
+    });
   }
 
   console.log(
