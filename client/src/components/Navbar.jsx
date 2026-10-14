@@ -6,7 +6,6 @@ import {
   CircleNotch,
   Clock,
   FolderSimple,
-  GitBranch,
   GitPullRequest,
   Moon,
   Sun,
@@ -188,8 +187,50 @@ export default function Navbar({ onSyncComplete }) {
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 min-h-16 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-900 flex items-center justify-center dark:border-zinc-800 dark:bg-zinc-900 dark:text-white">
-              <GitBranch size={20} weight="bold" />
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-black">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 32 32"
+                className="h-full w-full"
+                aria-hidden="true"
+              >
+                <path
+                  d="M8 10.5v11M10.5 24h2c4 0 4-4 4-8V8h4.5"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="24" cy="8" r="5" fill="#ffffff" opacity=".16" />
+                <circle
+                  cx="24"
+                  cy="8"
+                  r="4.5"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="1"
+                  opacity=".4"
+                >
+                  <animate
+                    attributeName="r"
+                    values="3.5;6;3.5"
+                    dur="2.4s"
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values=".4;0;.4"
+                    dur="2.4s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+                <g fill="#ffffff">
+                  <circle cx="8" cy="8" r="2.5" />
+                  <circle cx="8" cy="24" r="2.5" />
+                  <circle cx="24" cy="8" r="2.5" />
+                </g>
+              </svg>
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
