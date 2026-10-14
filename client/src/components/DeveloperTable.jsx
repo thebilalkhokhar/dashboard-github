@@ -83,12 +83,13 @@ export default function DeveloperTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[500px] text-left text-xs">
+        <table className="w-full min-w-150 text-left text-xs">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-[11px] uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
             <tr>
               <th className="py-3 px-5">Developer</th>
               <th className="py-3 px-5 text-center">PRs Opened</th>
               <th className="py-3 px-5 text-center">PRs Reviewed</th>
+              <th className="py-3 px-5 text-center">Commits</th>
               <th className="py-3 px-5">Active Repos</th>
             </tr>
           </thead>
@@ -96,7 +97,7 @@ export default function DeveloperTable({
             {visibleDevelopers.length === 0 ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="py-8 text-center text-zinc-500 dark:text-zinc-500"
                 >
                   {normalizedQuery ? (
@@ -144,6 +145,9 @@ export default function DeveloperTable({
                       <GitMerge size={13} weight="bold" />
                       {dev.prsReviewedCount}
                     </span>
+                  </td>
+                  <td className="py-3.5 px-5 text-center font-medium tabular-nums">
+                    {dev.commitsCount ?? 0}
                   </td>
                   <td className="py-3.5 px-5">
                     <div className="flex max-w-xs flex-wrap gap-1 xl:max-w-md">

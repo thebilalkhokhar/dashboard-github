@@ -11,6 +11,13 @@ const repoSchema = new mongoose.Schema(
       avatarUrl: { type: String },
       commitsCount: { type: Number, default: 0 },
     },
+    contributors: [
+      {
+        username: { type: String, required: true },
+        avatarUrl: { type: String },
+        commitsCount: { type: Number, default: 0 },
+      },
+    ],
     openPrsCount: { type: Number, default: 0 },
     lastPushedAt: { type: Date, index: true },
     isInactive: { type: Boolean, default: false },

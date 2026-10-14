@@ -24,24 +24,24 @@ const checkIsStuck = (createdAt) => {
   return Date.now() - new Date(createdAt).getTime() > fiveDaysInMs;
 };
 
+const fetchAllPages = (endpoint, parameters) =>
+  octokit.paginate(endpoint, { ...parameters, per_page: 100 });
+
 /**
  * Repositories fetch and upsert
  */
 const syncRepositories = async (owner, repoLimit) => {
-  // if owner is an org, use listForOrg, else use listForUser
-  let reposData = [];
+  let reposData;
   try {
-    const res = await octokit.rest.repos.listForOrg({
+    reposData = await fetchAllPages(octokit.rest.repos.listForOrg, {
       org: owner,
-      per_page: 100,
     });
-    reposData = res.data;
-  } catch {
-    const res = await octokit.rest.repos.listForUser({
+  } catch (error) {
+    if (error.status !== 404) throw error;
+
+    reposData = await fetchAllPages(octokit.rest.repos.listForUser, {
       username: owner,
-      per_page: 100,
     });
-    reposData = res.data;
   }
 
   const savedRepos = [];
@@ -52,11 +52,10 @@ const syncRepositories = async (owner, repoLimit) => {
 
   for (const repo of reposToSync) {
     const isInactive = checkIsInactive(repo.pushed_at);
-    const { data: contributors } = await octokit.rest.repos.listContributors({
-      owner,
-      repo: repo.name,
-      per_page: 100,
-    });
+    const contributors = await fetchAllPages(
+      octokit.rest.repos.listContributors,
+      { owner, repo: repo.name },
+    );
     const primaryContributor = contributors[0];
 
     const updateDoc = {
@@ -70,6 +69,13 @@ const syncRepositories = async (owner, repoLimit) => {
             commitsCount: primaryContributor.contributions,
           }
         : { username: null, avatarUrl: null, commitsCount: 0 },
+      contributors: contributors
+        .filter((contributor) => contributor.login)
+        .map((contributor) => ({
+          username: contributor.login,
+          avatarUrl: contributor.avatar_url,
+          commitsCount: Number(contributor.contributions) || 0,
+        })),
       lastPushedAt: repo.pushed_at ? new Date(repo.pushed_at) : null,
       isInactive,
       healthChecks: {
@@ -87,6 +93,55 @@ const syncRepositories = async (owner, repoLimit) => {
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
     savedRepos.push(saved);
+
+    for (const contributor of contributors) {
+      if (!contributor.login) continue;
+
+      const commitsCount = Number(contributor.contributions) || 0;
+      const existingDeveloper = await DeveloperActivity.findOne({
+        developerUsername: contributor.login,
+      })
+        .select("repoContributions")
+        .lean();
+      const existingContribution = existingDeveloper?.repoContributions?.find(
+        (entry) => entry.repositoryId === repo.id,
+      );
+      const previousCommitsCount = existingContribution?.commitsCount || 0;
+      const update = {
+        $set: {
+          avatarUrl: contributor.avatar_url,
+          ...(existingContribution && {
+            "repoContributions.$[repo].repositoryName": repo.name,
+            "repoContributions.$[repo].commitsCount": commitsCount,
+          }),
+        },
+        $addToSet: { activeRepos: repo.name },
+        $inc: { commitsCount: commitsCount - previousCommitsCount },
+      };
+      const options = {
+        upsert: true,
+        returnDocument: "after",
+        setDefaultsOnInsert: true,
+      };
+
+      if (existingContribution) {
+        options.arrayFilters = [{ "repo.repositoryId": repo.id }];
+      } else {
+        update.$push = {
+          repoContributions: {
+            repositoryId: repo.id,
+            repositoryName: repo.name,
+            commitsCount,
+          },
+        };
+      }
+
+      await DeveloperActivity.findOneAndUpdate(
+        { developerUsername: contributor.login },
+        update,
+        options,
+      );
+    }
   }
 
   return {
@@ -99,11 +154,10 @@ const syncRepositories = async (owner, repoLimit) => {
  * Pull Requests fetch and upsert
  */
 const syncPullRequestsForRepo = async (owner, repoDoc) => {
-  const { data: pulls } = await octokit.rest.pulls.list({
+  const pulls = await fetchAllPages(octokit.rest.pulls.list, {
     owner,
     repo: repoDoc.name,
     state: "all",
-    per_page: 50,
   });
 
   const savedPRs = [];

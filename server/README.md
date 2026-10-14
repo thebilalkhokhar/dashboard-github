@@ -79,26 +79,28 @@ The endpoint uses `GITHUB_TARGET_OWNER` from the server environment; the dashboa
 
 The sync service:
 
-1. Requests up to 100 repositories for the organization, falling back to a user repository request if the organization request fails.
+1. Fetches all organization repositories across pages of up to 100, falling back to paginated user repositories when the owner is not an organization.
 2. Processes all fetched repositories by default, or up to `GITHUB_REPO_LIMIT` when it is set to a positive integer.
-3. Fetches contributor information and upserts repository records for the selected repositories.
-4. Requests up to 50 pull requests per processed repository with `state=all`, then upserts PR records and developer activity.
+3. Fetches every selected repository's contributors across pages, stores the roster on the repository, and updates each developer's per-repository commit counts.
+4. Fetches all pull requests across pages of up to 100 per selected repository with `state=all`, then upserts PR records and developer activity.
 
-The service does not currently paginate beyond these requested pages. GitHub API rate limits and permissions apply.
+GitHub API rate limits and permissions apply. `GITHUB_REPO_LIMIT` limits repositories upserted and processed, but repository listing still fetches all pages to report the total available count.
 
 ### Analytics
 
-| Endpoint                        | Query parameters                            | Result                                                                                                     |
-| ------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `GET /api/analytics/overview`   | —                                           | Totals for repositories, inactive repositories, open PRs, stuck PRs, and developers                        |
-| `GET /api/analytics/developers` | `includeBots=true`, `sortBy=prsOpenedCount` | Up to 50 developers, sorted descending by the selected field; bots are excluded unless explicitly included |
+| Endpoint                        | Query parameters                            | Result                                                                                                |
+| ------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `GET /api/analytics/overview`   | —                                           | Totals for repositories, inactive repositories, open PRs, stuck PRs, and developers                   |
+| `GET /api/analytics/developers` | `includeBots=true`, `sortBy=prsOpenedCount` | All developers, sorted descending by the selected field; bots are excluded unless explicitly included |
 
 ### Repositories
 
-| Endpoint                  | Query parameters                           | Result                                     |
-| ------------------------- | ------------------------------------------ | ------------------------------------------ |
-| `GET /api/repos`          | `search`, `isInactive=true\|false`, `team` | Repositories matching the supplied filters |
-| `GET /api/repos/inactive` | —                                          | Repositories marked inactive               |
+| Endpoint                  | Query parameters                                                            | Result                                               |
+| ------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `GET /api/repos`          | `page=1`, `limit=100`, `search`, `isInactive=true\|false`, `team`, `sortBy` | Paginated repositories matching the supplied filters |
+| `GET /api/repos/inactive` | `page=1`, `limit=100`, `search`, `sortBy`                                   | Paginated inactive repositories                      |
+
+Repository endpoints return `pagination` metadata (`page`, `limit`, `totalPages`, and `totalCount`). The dashboard requests up to 100 saved repositories per page; changing pages reads the next page from MongoDB and does not trigger a GitHub sync.
 
 ### Pull requests
 
@@ -121,9 +123,9 @@ On request errors, handlers return `success: false` and a `message`; sync errors
 
 ## Data models
 
-- **Repository:** GitHub repository ID, name/full name, team, top contributor, open PR count, last push time, inactivity status, and health-check flags.
+- **Repository:** GitHub repository ID, name/full name, team, all contributors and their commit counts, top contributor, open PR count, last push time, inactivity status, and health-check flags.
 - **PullRequest:** PR number, repository reference, title, GitHub URL, author GitHub login, requested reviewers, state, stuck status, and opened/merged/closed timestamps.
-- **DeveloperActivity:** developer username, avatar, PR-opened and PR-reviewed counts, active repositories, and last active time.
+- **DeveloperActivity:** developer username, avatar, total commits and per-repository contribution counts, PR-opened and PR-reviewed counts, active repositories, and last active time.
 - **User:** GitHub ID, username, avatar, role, team, and active status. The current dashboard API does not implement user authentication or role-based access.
 
 ## Current calculation and implementation notes
@@ -132,7 +134,7 @@ On request errors, handlers return `success: false` and a `message`; sync errors
 - A pull request is stuck when it is open and was created more than 5 days ago. The current calculation uses the PR creation timestamp; it does not assess the last activity timestamp.
 - `hasCi`, `hasBranchProtection`, and `hasCodeowners` are not yet populated from GitHub. `hasReadme` currently uses a placeholder based on the repository's archived state.
 - Developer PR-review counts track newly requested reviewers observed by the sync service, not all submitted review events.
-- `openPrsCount` is based on the PR list returned by the current request and may be incomplete when a repository has more than 50 PRs.
+- `openPrsCount` and developer activity are based on all PR pages returned by GitHub for each selected repository.
 
 ## Security
 

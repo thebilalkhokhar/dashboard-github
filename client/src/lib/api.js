@@ -24,9 +24,17 @@ export const fetchStuckPRs = async () => {
   return res.data.data;
 };
 
-export const fetchRepositories = async (inactiveOnly = false) => {
-  const res = await api.get(inactiveOnly ? "/repos/inactive" : "/repos");
-  return res.data.data;
+export const fetchRepositories = async ({
+  inactiveOnly = false,
+  page = 1,
+  limit = 100,
+  search = "",
+  sortBy = "lastPushedAt",
+} = {}) => {
+  const res = await api.get(inactiveOnly ? "/repos/inactive" : "/repos", {
+    params: { page, limit, search, sortBy },
+  });
+  return res.data;
 };
 
 export const triggerSync = async () => {

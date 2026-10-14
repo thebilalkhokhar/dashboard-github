@@ -49,9 +49,7 @@ const getDeveloperAnalytics = async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = -1;
 
-    const developers = await DeveloperActivity.find(query)
-      .sort(sortOptions)
-      .limit(50);
+    const developers = await DeveloperActivity.find(query).sort(sortOptions);
 
     return res.status(200).json({
       success: true,

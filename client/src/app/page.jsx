@@ -20,69 +20,52 @@ import {
   MagnifyingGlass,
 } from "@phosphor-icons/react";
 
+const REPOSITORY_PAGE_SIZE = 100;
+
 export default function DashboardPage() {
   const [overview, setOverview] = useState(null);
   const [developers, setDevelopers] = useState([]);
   const [stuckPrs, setStuckPrs] = useState([]);
   const [repositories, setRepositories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [repositoryCounts, setRepositoryCounts] = useState({
-    all: 0,
-    inactive: 0,
+  const [repositoryPage, setRepositoryPage] = useState(1);
+  const [repositoryPageInfo, setRepositoryPageInfo] = useState({
+    page: 1,
+    limit: REPOSITORY_PAGE_SIZE,
+    totalCount: 0,
+    totalPages: 0,
   });
   const [inactiveOnly, setInactiveOnly] = useState(false);
+  const [repositorySortBy, setRepositorySortBy] = useState("lastPushedAt");
+  const [repositoryRefreshKey, setRepositoryRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [repositoriesLoading, setRepositoriesLoading] = useState(true);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      setRepositoriesLoading(true);
-      const [overviewData, devData, stuckData, repositoryData] = await Promise.all([
+      const [overviewData, devData, stuckData] = await Promise.all([
         fetchOverviewStats(),
         fetchDeveloperAnalytics(),
         fetchStuckPRs(),
-        fetchRepositories(),
       ]);
       setOverview(overviewData);
       setDevelopers(devData);
       setStuckPrs(stuckData);
-      setRepositories(repositoryData);
-      setRepositoryCounts({
-        all: repositoryData.length,
-        inactive: repositoryData.filter((repo) => repo.isInactive).length,
-      });
       setInactiveOnly(false);
+      setRepositoryPage(1);
+      setRepositoryRefreshKey((currentKey) => currentKey + 1);
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
     } finally {
       setLoading(false);
-      setRepositoriesLoading(false);
     }
   };
 
-  const handleRepositoryFilterChange = async (nextInactiveOnly) => {
+  const handleRepositoryFilterChange = (nextInactiveOnly) => {
     if (nextInactiveOnly === inactiveOnly) return;
-
-    setRepositoriesLoading(true);
-    try {
-      const repositoryData = await fetchRepositories(nextInactiveOnly);
-      setRepositories(repositoryData);
-      setRepositoryCounts((currentCounts) => ({
-        ...currentCounts,
-        ...(nextInactiveOnly
-          ? { inactive: repositoryData.length }
-          : {
-              all: repositoryData.length,
-              inactive: repositoryData.filter((repo) => repo.isInactive).length,
-            }),
-      }));
-      setInactiveOnly(nextInactiveOnly);
-    } catch (err) {
-      console.error("Failed to fetch repositories:", err);
-    } finally {
-      setRepositoriesLoading(false);
-    }
+    setInactiveOnly(nextInactiveOnly);
+    setRepositoryPage(1);
   };
 
   useEffect(() => {
@@ -92,11 +75,10 @@ export default function DashboardPage() {
       void (async () => {
         try {
           setLoading(true);
-          const [overviewData, devData, stuckData, repositoryData] = await Promise.all([
+          const [overviewData, devData, stuckData] = await Promise.all([
             fetchOverviewStats(),
             fetchDeveloperAnalytics(),
             fetchStuckPRs(),
-            fetchRepositories(),
           ]);
 
           if (!isMounted) return;
@@ -104,18 +86,11 @@ export default function DashboardPage() {
           setOverview(overviewData);
           setDevelopers(devData);
           setStuckPrs(stuckData);
-          setRepositories(repositoryData);
-          setRepositoryCounts({
-            all: repositoryData.length,
-            inactive: repositoryData.filter((repo) => repo.isInactive).length,
-          });
-          setInactiveOnly(false);
         } catch (err) {
           console.error("Failed to fetch dashboard data:", err);
         } finally {
           if (isMounted) {
             setLoading(false);
-            setRepositoriesLoading(false);
           }
         }
       })();
@@ -126,6 +101,55 @@ export default function DashboardPage() {
       clearTimeout(timeoutId);
     };
   }, []);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const timeoutId = setTimeout(
+      () => {
+        setRepositoriesLoading(true);
+        void (async () => {
+          try {
+            const response = await fetchRepositories({
+              inactiveOnly,
+              page: repositoryPage,
+              limit: REPOSITORY_PAGE_SIZE,
+              search: searchQuery.trim(),
+              sortBy: repositorySortBy,
+            });
+
+            if (!isCurrent) return;
+
+            setRepositories(response.data);
+            setRepositoryPageInfo(response.pagination);
+          } catch (error) {
+            if (isCurrent) {
+              console.error("Failed to fetch repositories:", error);
+            }
+          } finally {
+            if (isCurrent) setRepositoriesLoading(false);
+          }
+        })();
+      },
+      searchQuery.trim() ? 250 : 0,
+    );
+
+    return () => {
+      isCurrent = false;
+      clearTimeout(timeoutId);
+    };
+  }, [
+    inactiveOnly,
+    repositoryPage,
+    repositoryRefreshKey,
+    repositorySortBy,
+    searchQuery,
+  ]);
+
+  const handleRepositorySortChange = (nextSortBy) => {
+    setRepositorySortBy(nextSortBy);
+    setRepositoryPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 flex flex-col font-sans dark:bg-black dark:text-zinc-100">
@@ -177,7 +201,10 @@ export default function DashboardPage() {
           <input
             type="search"
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setRepositoryPage(1);
+            }}
             placeholder="Search developers and repositories..."
             aria-label="Search developers and repositories"
             className="w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2 pl-10 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:ring-zinc-600"
@@ -189,9 +216,16 @@ export default function DashboardPage() {
           searchQuery={searchQuery}
           loading={loading || repositoriesLoading}
           inactiveOnly={inactiveOnly}
-          allCount={repositoryCounts.all}
-          inactiveCount={repositoryCounts.inactive}
+          allCount={overview?.totalRepos ?? 0}
+          inactiveCount={overview?.inactiveRepos ?? 0}
           onFilterChange={handleRepositoryFilterChange}
+          page={repositoryPageInfo.page || repositoryPage}
+          pageSize={repositoryPageInfo.limit || REPOSITORY_PAGE_SIZE}
+          totalPages={repositoryPageInfo.totalPages}
+          totalCount={repositoryPageInfo.totalCount}
+          onPageChange={setRepositoryPage}
+          sortBy={repositorySortBy}
+          onSortChange={handleRepositorySortChange}
         />
 
         {/* Data Tables Grid */}

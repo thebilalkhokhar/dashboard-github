@@ -1,10 +1,13 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowSquareOut,
   CheckCircle,
   ClockCountdown,
+  CaretLeft,
+  CaretRight,
   FolderSimple,
   MagnifyingGlass,
   XCircle,
@@ -45,9 +48,14 @@ export default function RepositoryTable({
   allCount = 0,
   inactiveCount = 0,
   onFilterChange,
+  page = 1,
+  pageSize = 100,
+  totalPages = 0,
+  totalCount = 0,
+  onPageChange,
+  sortBy = "lastPushedAt",
+  onSortChange,
 }) {
-  const [sortBy, setSortBy] = React.useState("lastPushedAt");
-
   if (loading) {
     return (
       <section className="animate-pulse rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -71,25 +79,10 @@ export default function RepositoryTable({
         : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
     }`;
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const visibleRepositories = repositories
-    .filter(
-      (repo) =>
-        repo.name?.toLocaleLowerCase().includes(normalizedQuery) ||
-        repo.fullName?.toLocaleLowerCase().includes(normalizedQuery),
-    )
-    .sort((a, b) => {
-      if (sortBy === "openPrsCount") {
-        return (Number(b.openPrsCount) || 0) - (Number(a.openPrsCount) || 0);
-      }
-
-      if (sortBy === "name") {
-        return (a.name || "").localeCompare(b.name || "");
-      }
-
-      const dateA = a.lastPushedAt ? new Date(a.lastPushedAt).getTime() : 0;
-      const dateB = b.lastPushedAt ? new Date(b.lastPushedAt).getTime() : 0;
-      return dateB - dateA;
-    });
+  const visibleRepositories = repositories;
+  const pageCount = Math.max(totalPages, 1);
+  const firstVisible = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastVisible = Math.min(page * pageSize, totalCount);
 
   return (
     <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
@@ -135,7 +128,7 @@ export default function RepositoryTable({
           <select
             id="repository-sort"
             value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
+            onChange={(event) => onSortChange?.(event.target.value)}
             className="rounded border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
           >
             <option value="lastPushedAt">Recently Pushed</option>
@@ -146,12 +139,12 @@ export default function RepositoryTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[650px] text-left text-xs">
+        <table className="w-full min-w-[760px] text-left text-xs">
           <thead className="border-b border-zinc-200 bg-zinc-50 text-[11px] uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
             <tr>
               <th className="px-4 py-3">Repository</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Top Contributor</th>
+              <th className="px-4 py-3">Contributors</th>
               <th className="px-4 py-3 text-center">Open PRs</th>
               <th className="px-4 py-3">Health Checks</th>
               <th className="px-4 py-3">Last Pushed</th>
@@ -169,16 +162,20 @@ export default function RepositoryTable({
                       <MagnifyingGlass size={15} aria-hidden="true" />
                       No matching results found for &apos;{searchQuery}&apos;
                     </span>
-                  ) : inactiveOnly
-                    ? "No inactive repositories found."
-                    : "No repositories found. Sync GitHub data to get started."}
+                  ) : inactiveOnly ? (
+                    "No inactive repositories found."
+                  ) : (
+                    "No repositories found. Sync GitHub data to get started."
+                  )}
                 </td>
               </tr>
             ) : (
               visibleRepositories.map((repo) => {
-                const topContributor = repo.topContributor?.username
-                  ? repo.topContributor
-                  : null;
+                const contributors = repo.contributors?.length
+                  ? repo.contributors
+                  : repo.topContributor?.username
+                    ? [repo.topContributor]
+                    : [];
                 const fullName = repo.fullName || repo.name;
 
                 return (
@@ -219,26 +216,33 @@ export default function RepositoryTable({
                       )}
                     </td>
                     <td className="px-4 py-3.5">
-                      {topContributor ? (
-                        <div className="flex items-center gap-2">
-                          {topContributor.avatarUrl ? (
-                            <Image
-                              src={topContributor.avatarUrl}
-                              alt=""
-                              width={24}
-                              height={24}
-                              unoptimized
-                              className="h-6 w-6 rounded-full border border-zinc-200 object-cover dark:border-zinc-800"
-                            />
-                          ) : null}
-                          <div className="min-w-0">
-                            <span className="block max-w-[140px] truncate font-medium text-zinc-800 dark:text-zinc-200">
-                              @{topContributor.username}
-                            </span>
-                            <span className="text-[10px] text-zinc-500">
-                              {topContributor.commitsCount ?? 0} commits
-                            </span>
-                          </div>
+                      {contributors.length ? (
+                        <div className="flex max-w-[360px] flex-wrap gap-1">
+                          {contributors.map((contributor) => (
+                            <Link
+                              key={contributor.username}
+                              href={`/developers/${contributor.username}`}
+                              title={`${contributor.commitsCount ?? 0} commits`}
+                              className="inline-flex max-w-full items-center gap-1 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-1 text-[10px] font-medium text-zinc-700 hover:border-zinc-400 hover:text-black dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-white"
+                            >
+                              {contributor.avatarUrl ? (
+                                <Image
+                                  src={contributor.avatarUrl}
+                                  alt=""
+                                  width={16}
+                                  height={16}
+                                  unoptimized
+                                  className="h-4 w-4 shrink-0 rounded-full object-cover"
+                                />
+                              ) : null}
+                              <span className="max-w-[110px] truncate">
+                                @{contributor.username}
+                              </span>
+                              <span className="whitespace-nowrap text-zinc-500">
+                                {contributor.commitsCount ?? 0}
+                              </span>
+                            </Link>
+                          ))}
                         </div>
                       ) : (
                         <span className="text-zinc-500">None</span>
@@ -274,6 +278,39 @@ export default function RepositoryTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          Showing {firstVisible}-{lastVisible} of {totalCount} repositories
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Previous repository page"
+            title="Previous page"
+            disabled={page <= 1}
+            onClick={() => onPageChange?.(page - 1)}
+            className="inline-flex items-center gap-1 rounded border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            <CaretLeft size={14} aria-hidden="true" />
+            Previous
+          </button>
+          <span className="min-w-[72px] text-center text-xs tabular-nums text-zinc-600 dark:text-zinc-400">
+            Page {page} of {pageCount}
+          </span>
+          <button
+            type="button"
+            aria-label="Next repository page"
+            title="Next page"
+            disabled={page >= pageCount}
+            onClick={() => onPageChange?.(page + 1)}
+            className="inline-flex items-center gap-1 rounded border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            Next
+            <CaretRight size={14} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </section>
   );
