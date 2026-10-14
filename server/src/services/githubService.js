@@ -39,9 +39,14 @@ const syncRepositories = async (owner, repoLimit) => {
   } catch (error) {
     if (error.status !== 404) throw error;
 
-    reposData = await fetchAllPages(octokit.rest.repos.listForUser, {
-      username: owner,
-    });
+    reposData = (
+      await fetchAllPages(octokit.rest.repos.listForAuthenticatedUser, {
+        affiliation: "owner,collaborator,organization_member",
+        visibility: "all",
+      })
+    ).filter(
+      (repo) => repo.owner?.login?.toLocaleLowerCase() === owner.toLocaleLowerCase(),
+    );
   }
 
   const savedRepos = [];

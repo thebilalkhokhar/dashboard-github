@@ -29,6 +29,22 @@ GITHUB_TARGET_OWNER=fastify
 CLIENT_URL=http://localhost:3000
 ```
 
+### Create a GitHub token for private repositories
+
+Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) for the account or organization that owns the repositories:
+
+1. Set **Resource owner** to the user or organization configured in `GITHUB_TARGET_OWNER`.
+2. Under **Repository access**, choose **All repositories** to sync every repository the token owner can access, or **Only select repositories** and select the repositories this dashboard should sync.
+3. Grant these **Repository permissions**:
+   - **Metadata: Read-only** (GitHub requires this permission and may select it automatically).
+   - **Contents: Read-only** (used to fetch repository contributors).
+   - **Pull requests: Read-only** (used to fetch pull requests).
+4. Generate the token and set it as `GITHUB_TOKEN` in `server/.env`. Keep it server-side; never commit it or put it in client-side code.
+5. If this is an organization token, have an organization owner approve it if the organization requires approval. The token creator must also have access to the selected private repositories.
+6. Restart the server and trigger a sync to import the repositories.
+
+No write or admin permissions are needed. This token only lets the dashboard read data from repositories it can access.
+
 | Variable              | Required        | Purpose                                                                                              |
 | --------------------- | --------------- | ---------------------------------------------------------------------------------------------------- |
 | `MONGO_URI`           | Yes             | MongoDB connection string                                                                            |
@@ -79,7 +95,7 @@ The endpoint uses `GITHUB_TARGET_OWNER` from the server environment; the dashboa
 
 The sync service:
 
-1. Fetches all organization repositories across pages of up to 100, falling back to paginated user repositories when the owner is not an organization.
+1. Fetches all organization repositories across pages of up to 100. If the owner is not an organization, it lists repositories visible to the authenticated token and filters them to `GITHUB_TARGET_OWNER`; this includes private repositories the token can access.
 2. Processes all fetched repositories by default, or up to `GITHUB_REPO_LIMIT` when it is set to a positive integer.
 3. Fetches every selected repository's contributors across pages, stores the roster on the repository, and updates each developer's per-repository commit counts.
 4. Fetches all pull requests across pages of up to 100 per selected repository with `state=all`, then upserts PR records and developer activity.
