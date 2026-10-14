@@ -150,8 +150,7 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
 
     const previousReviewers = new Set(previousPR?.reviewers || []);
     const newReviewers = (pr.requested_reviewers || []).filter(
-      (reviewer) =>
-        reviewer.login && !previousReviewers.has(reviewer.login),
+      (reviewer) => reviewer.login && !previousReviewers.has(reviewer.login),
     );
 
     for (const reviewer of newReviewers) {
@@ -182,37 +181,14 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
   return savedPRs;
 };
 
-// /**
-//  * Main Sync pipeline orchestrator
-//  */
-// const syncAllData = async (targetOwner) => {
-//   const owner = targetOwner || process.env.GITHUB_TARGET_OWNER;
-//   if (!owner) {
-//     throw new Error("Target GitHub owner/username lazmi define karein.");
-//   }
-
-//   const repos = await syncRepositories(owner);
-//   let totalPrCount = 0;
-
-//   // Har synced repo ke liye PRs pull karna
-//   for (const repo of repos) {
-//     const prs = await syncPullRequestsForRepo(owner, repo);
-//     totalPrCount += prs.length;
-//   }
-
-//   return {
-//     syncedReposCount: repos.length,
-//     syncedPrsCount: totalPrCount,
-//   };
-// };
-
 /**
  * Main Sync pipeline orchestrator
  */
+
 const syncAllData = async (targetOwner) => {
   const owner = targetOwner || process.env.GITHUB_TARGET_OWNER;
   if (!owner) {
-    throw new Error("Target GitHub owner/username lazmi define karein.");
+    throw new Error("Target GitHub owner/username must be defined.");
   }
 
   console.log(`[Sync] Fetching repositories for: ${owner}...`);

@@ -14,15 +14,18 @@ export const fetchDeveloperAnalytics = async () => {
   return res.data.data;
 };
 
+export const fetchDeveloperDetail = async (username) => {
+  const res = await api.get(`/analytics/developers/${username}`);
+  return res.data.data;
+};
+
 export const fetchStuckPRs = async () => {
   const res = await api.get("/prs/stuck");
   return res.data.data;
 };
 
 export const fetchRepositories = async (inactiveOnly = false) => {
-  const res = await api.get(
-    inactiveOnly ? "/repos/inactive" : "/repos",
-  );
+  const res = await api.get(inactiveOnly ? "/repos/inactive" : "/repos");
   return res.data.data;
 };
 

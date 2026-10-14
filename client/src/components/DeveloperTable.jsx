@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   MagnifyingGlass,
   Users,
@@ -27,7 +28,10 @@ export default function DeveloperTable({
         <div className="mb-4 h-5 w-48 rounded bg-zinc-200 dark:bg-zinc-900" />
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-12 rounded bg-zinc-100 dark:bg-zinc-900/60" />
+            <div
+              key={i}
+              className="h-12 rounded bg-zinc-100 dark:bg-zinc-900/60"
+            />
           ))}
         </div>
       </div>
@@ -37,7 +41,9 @@ export default function DeveloperTable({
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
   const visibleDevelopers = developers
     .filter((developer) =>
-      developer.developerUsername?.toLocaleLowerCase().includes(normalizedQuery),
+      developer.developerUsername
+        ?.toLocaleLowerCase()
+        .includes(normalizedQuery),
     )
     .sort((a, b) => (Number(b[sortBy]) || 0) - (Number(a[sortBy]) || 0));
 
@@ -45,7 +51,11 @@ export default function DeveloperTable({
     <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-950">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 p-5 dark:border-zinc-800">
         <div className="flex items-center gap-2">
-          <Users size={20} weight="duotone" className="text-zinc-600 dark:text-zinc-300" />
+          <Users
+            size={20}
+            weight="duotone"
+            className="text-zinc-600 dark:text-zinc-300"
+          />
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
             Developer Activity & Workload
           </h2>
@@ -85,7 +95,10 @@ export default function DeveloperTable({
           <tbody className="divide-y divide-zinc-200 text-zinc-700 dark:divide-zinc-800/60 dark:text-zinc-300">
             {visibleDevelopers.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-zinc-500 dark:text-zinc-500">
+                <td
+                  colSpan={4}
+                  className="py-8 text-center text-zinc-500 dark:text-zinc-500"
+                >
                   {normalizedQuery ? (
                     <span className="inline-flex items-center justify-center gap-2">
                       <MagnifyingGlass size={15} aria-hidden="true" />
@@ -103,7 +116,10 @@ export default function DeveloperTable({
                   className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                 >
                   <td className="py-3.5 px-5">
-                    <div className="flex items-center gap-3">
+                    <Link
+                      href={`/developers/${dev.developerUsername}`}
+                      className="flex w-fit items-center gap-3 transition-colors hover:text-black dark:hover:text-white"
+                    >
                       <Image
                         src={dev.avatarUrl || "https://github.com/ghost.png"}
                         alt={dev.developerUsername}
@@ -112,10 +128,10 @@ export default function DeveloperTable({
                         unoptimized
                         className="h-7 w-7 rounded-full border border-zinc-200 object-cover dark:border-zinc-800"
                       />
-                      <span className="font-medium text-zinc-900 dark:text-white">
+                      <span className="font-medium text-zinc-900 hover:underline dark:text-white">
                         @{dev.developerUsername}
                       </span>
-                    </div>
+                    </Link>
                   </td>
                   <td className="py-3.5 px-5 text-center">
                     <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">

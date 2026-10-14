@@ -63,7 +63,37 @@ const getDeveloperAnalytics = async (req, res) => {
   }
 };
 
+const getDeveloperDetail = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const developer = await DeveloperActivity.findOne({
+      developerUsername: username,
+    });
+
+    if (!developer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Developer not found" });
+    }
+
+    const pullRequests = await PullRequest.find({ authorGithubId: username })
+      .populate("repository", "name fullName")
+      .sort({ openedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        developer,
+        pullRequests,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getOverviewStats,
   getDeveloperAnalytics,
+  getDeveloperDetail,
 };
