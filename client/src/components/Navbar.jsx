@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useSyncExternalStore } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import {
   ArrowsClockwise,
   GitBranch,
@@ -16,12 +16,20 @@ const getThemeSnapshot = () =>
 const getServerThemeSnapshot = () => "light";
 
 const subscribeToTheme = (onStoreChange) => {
-  window.addEventListener(themeChangeEvent, onStoreChange);
-  window.addEventListener("storage", onStoreChange);
+  const handleThemeChange = () => {
+    document.documentElement.classList.toggle(
+      "dark",
+      getThemeSnapshot() === "dark",
+    );
+    onStoreChange();
+  };
+
+  window.addEventListener(themeChangeEvent, handleThemeChange);
+  window.addEventListener("storage", handleThemeChange);
 
   return () => {
-    window.removeEventListener(themeChangeEvent, onStoreChange);
-    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(themeChangeEvent, handleThemeChange);
+    window.removeEventListener("storage", handleThemeChange);
   };
 };
 
@@ -33,10 +41,6 @@ export default function Navbar({ onSyncComplete }) {
     getServerThemeSnapshot,
   );
   const isDarkMode = theme === "dark";
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode);
-  }, [isDarkMode]);
 
   const toggleTheme = () => {
     const nextIsDarkMode = !isDarkMode;
