@@ -73,6 +73,7 @@ The server connects to MongoDB before listening. Check its health at [http://loc
 ## API
 
 The default API origin is `http://localhost:5000`. JSON API routes use the `/api` prefix.
+API requests establish a shared MongoDB connection before running database operations. If the connection is unavailable, API routes return `503` with a database-unavailable message; `/health` checks the process without requiring MongoDB.
 
 ### Health
 

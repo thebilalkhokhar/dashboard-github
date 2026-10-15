@@ -11,4 +11,7 @@ connectDB().then(() => {
       `Server running in ${process.env.NODE_ENV || "development"} mode on port ${PORT}`,
     );
   });
+}).catch((error) => {
+  console.error(`Failed to start server: ${error.message}`);
+  process.exitCode = 1;
 });
