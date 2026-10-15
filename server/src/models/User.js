@@ -2,18 +2,33 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    githubId: { type: String, required: true, unique: true, index: true },
-    username: { type: String, required: true, trim: true },
-    avatarUrl: { type: String },
-    role: {
+    name: {
       type: String,
-      enum: ["manager", "lead", "developer"],
-      default: "developer",
+      required: [true, "Name is required"],
+      trim: true,
     },
-    team: { type: String, default: null },
-    isActive: { type: Boolean, default: true },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: 6,
+      select: false,
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);

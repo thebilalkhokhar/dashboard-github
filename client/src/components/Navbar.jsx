@@ -1,5 +1,10 @@
 "use client";
-import React, { useEffect, useState, useSyncExternalStore } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   ArrowsClockwise,
   CheckCircle,
@@ -8,11 +13,20 @@ import {
   FolderSimple,
   GitPullRequest,
   Moon,
+  SignOut,
   Sun,
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
-import { fetchSyncStatus, triggerSync } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import {
+  clearAuthSession,
+  fetchSyncStatus,
+  getServerAuthUserSnapshot,
+  getStoredAuthUserSnapshot,
+  subscribeToAuthState,
+  triggerSync,
+} from "@/lib/api";
 
 const themeChangeEvent = "dashboard-theme-change";
 
@@ -40,6 +54,22 @@ const subscribeToTheme = (onStoreChange) => {
 };
 
 export default function Navbar({ onSyncComplete }) {
+  const router = useRouter();
+  const storedUser = useSyncExternalStore(
+    subscribeToAuthState,
+    getStoredAuthUserSnapshot,
+    getServerAuthUserSnapshot,
+  );
+  const user = useMemo(() => {
+    if (!storedUser) return null;
+
+    try {
+      return JSON.parse(storedUser);
+    } catch (error) {
+      console.error("Failed to read the signed-in user profile:", error);
+      return null;
+    }
+  }, [storedUser]);
   const [syncing, setSyncing] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
@@ -52,6 +82,11 @@ export default function Navbar({ onSyncComplete }) {
     getServerThemeSnapshot,
   );
   const isDarkMode = theme === "dark";
+
+  const handleSignOut = () => {
+    clearAuthSession();
+    router.replace("/login");
+  };
 
   useEffect(() => {
     if (!syncing) return undefined;
@@ -243,6 +278,22 @@ export default function Navbar({ onSyncComplete }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {user && (
+              <span
+                title={user.email || user.name}
+                className="inline-block max-w-28 truncate rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 sm:max-w-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                {user.name || user.email}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <SignOut size={16} weight="bold" aria-hidden="true" />
+              Sign Out
+            </button>
             <button
               type="button"
               onClick={toggleTheme}

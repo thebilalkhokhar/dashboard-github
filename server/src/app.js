@@ -37,12 +37,14 @@ app.use("/api", async (req, res, next) => {
 });
 
 // Routes Registration
+const authRoutes = require("./routes/authRoutes");
 const syncRoutes = require("./routes/syncRoutes");
 const repoRoutes = require("./routes/repoRoutes");
 const prRoutes = require("./routes/prRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 
 // Routes mapping
+app.use("/api/auth", authRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/repos", repoRoutes);
 app.use("/api/prs", prRoutes);
