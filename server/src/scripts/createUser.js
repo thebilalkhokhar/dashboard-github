@@ -10,8 +10,8 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 const createInitialUser = async () => {
   const args = process.argv.slice(2);
   const name = args[0] || "Admin";
-  const email = args[1] || "bilal@biztek.com";
-  const rawPassword = args[2] || "bilal@123";
+  const email = args[1] || "admin@biztek.com";
+  const rawPassword = args[2] || "admin@123";
 
   if (!process.env.MONGO_URI) {
     console.error("Error: MONGO_URI does not exist in the .env file.");

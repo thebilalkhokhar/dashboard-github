@@ -6,6 +6,8 @@ const {
   getRepoDetail,
 } = require("../controllers/repoController");
 
+router.use(protect);
+
 router.get("/", getAllRepos);
 router.get("/inactive", getInactiveRepos);
 router.get("/:repoName", getRepoDetail);
