@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CircleNotch } from "@phosphor-icons/react";
 import {
+  getAuthToken,
   getAuthSnapshot,
   getServerAuthSnapshot,
   subscribeToAuthState,
@@ -31,7 +32,7 @@ export default function AuthGuard({ children }) {
   );
 
   useEffect(() => {
-    if (pathname && pathname !== "/login" && !authenticated) {
+    if (pathname && pathname !== "/login" && !getAuthToken()) {
       router.replace("/login");
     }
   }, [authenticated, pathname, router]);
