@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import AuthGuard, { AuthLoading } from "@/components/AuthGuard";
+import { AuthLoading } from "@/components/AuthGuard";
+import RootNavigationShell from "@/components/RootNavigationShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,14 +32,18 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
         <Suspense fallback={<AuthLoading />}>
           {/* <AuthGuard> */}
-          {children}
+          <RootNavigationShell>{children}</RootNavigationShell>
           {/* </AuthGuard> */}
         </Suspense>
         <Script id="theme-init" strategy="beforeInteractive">
           {`try {
+            const preference = window.localStorage.getItem("theme") || "system";
+            const isDark = preference === "dark" ||
+              (preference === "system" &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches);
             document.documentElement.classList.toggle(
               "dark",
-              window.localStorage.getItem("theme") === "dark",
+              isDark,
             );
           } catch (error) {
             console.error("Failed to initialize theme:", error);

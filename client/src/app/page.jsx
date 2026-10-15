@@ -17,7 +17,6 @@ import {
   GitPullRequest,
   WarningOctagon,
   Users,
-  MagnifyingGlass,
 } from "@phosphor-icons/react";
 
 const REPOSITORY_FETCH_PAGE_SIZE = 100;
@@ -153,7 +152,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 flex flex-col font-sans dark:bg-black dark:text-zinc-100">
-      <Navbar onSyncComplete={loadData} />
+      <Navbar
+        onSyncComplete={loadData}
+        searchQuery={searchQuery}
+        onSearchChange={(event) => {
+          setSearchQuery(event.target.value);
+          setRepositoryPage(1);
+        }}
+      />
 
       <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 flex-1 space-y-8">
         {/* Metric Cards Grid */}
@@ -192,54 +198,41 @@ export default function DashboardPage() {
           />
         </section>
 
-        <div className="relative w-full sm:w-80">
-          <MagnifyingGlass
-            size={18}
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"
+        <section id="repositories" aria-label="Repositories">
+          <RepositoryTable
+            repositories={repositories}
+            searchQuery={searchQuery}
+            loading={loading || repositoriesLoading}
+            inactiveOnly={inactiveOnly}
+            allCount={overview?.totalRepos ?? 0}
+            inactiveCount={overview?.inactiveRepos ?? 0}
+            onFilterChange={handleRepositoryFilterChange}
+            page={repositoryPage}
+            pageSize={TABLE_PAGE_SIZE}
+            pageOffset={(repositoryFetchPage - 1) * REPOSITORY_FETCH_PAGE_SIZE}
+            totalCount={repositoryPageInfo.totalCount}
+            onPageChange={setRepositoryPage}
+            sortBy={repositorySortBy}
+            onSortChange={handleRepositorySortChange}
           />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setRepositoryPage(1);
-            }}
-            placeholder="Search developers and repositories..."
-            aria-label="Search developers and repositories"
-            className="w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2 pl-10 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:ring-zinc-600"
-          />
-        </div>
-
-        <RepositoryTable
-          repositories={repositories}
-          searchQuery={searchQuery}
-          loading={loading || repositoriesLoading}
-          inactiveOnly={inactiveOnly}
-          allCount={overview?.totalRepos ?? 0}
-          inactiveCount={overview?.inactiveRepos ?? 0}
-          onFilterChange={handleRepositoryFilterChange}
-          page={repositoryPage}
-          pageSize={TABLE_PAGE_SIZE}
-          pageOffset={(repositoryFetchPage - 1) * REPOSITORY_FETCH_PAGE_SIZE}
-          totalCount={repositoryPageInfo.totalCount}
-          onPageChange={setRepositoryPage}
-          sortBy={repositorySortBy}
-          onSortChange={handleRepositorySortChange}
-        />
+        </section>
 
         {/* Data Tables Grid */}
-        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 items-start">
-          <DeveloperTable
-            developers={developers}
-            loading={loading}
-            searchQuery={searchQuery}
-          />
-          <StuckPrsTable
-            prs={stuckPrs}
-            loading={loading}
-            searchQuery={searchQuery}
-          />
+        <section className="grid grid-cols-1 items-start gap-6 lg:gap-8 xl:grid-cols-2">
+          <div id="developers">
+            <DeveloperTable
+              developers={developers}
+              loading={loading}
+              searchQuery={searchQuery}
+            />
+          </div>
+          <div id="pull-requests">
+            <StuckPrsTable
+              prs={stuckPrs}
+              loading={loading}
+              searchQuery={searchQuery}
+            />
+          </div>
         </section>
       </main>
     </div>

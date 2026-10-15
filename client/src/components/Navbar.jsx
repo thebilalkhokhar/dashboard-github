@@ -1,146 +1,53 @@
 "use client";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowsClockwise,
-  Bell,
   CheckCircle,
   CircleNotch,
   Clock,
   FolderSimple,
   GitPullRequest,
-  Moon,
-  SignOut,
-  Sun,
+  MagnifyingGlass,
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
-import { useRouter } from "next/navigation";
-import {
-  clearAuthSession,
-  fetchSyncStatus,
-  getServerAuthUserSnapshot,
-  getStoredAuthUserSnapshot,
-  subscribeToAuthState,
-  triggerSync,
-} from "@/lib/api";
-import api from "@/lib/api";
-import NotificationSettingsDrawer from "@/components/NotificationSettingsDrawer";
-import { getPushSubscriptionStatus } from "@/lib/pushManager";
+import { fetchSyncStatus, triggerSync } from "@/lib/api";
 
-const themeChangeEvent = "dashboard-theme-change";
-
-const getThemeSnapshot = () =>
-  window.localStorage.getItem("theme") === "dark" ? "dark" : "light";
-
-const getServerThemeSnapshot = () => "light";
-
-const subscribeToTheme = (onStoreChange) => {
-  const handleThemeChange = () => {
-    document.documentElement.classList.toggle(
-      "dark",
-      getThemeSnapshot() === "dark",
-    );
-    onStoreChange();
-  };
-
-  window.addEventListener(themeChangeEvent, handleThemeChange);
-  window.addEventListener("storage", handleThemeChange);
-
-  return () => {
-    window.removeEventListener(themeChangeEvent, handleThemeChange);
-    window.removeEventListener("storage", handleThemeChange);
-  };
-};
-
-export default function Navbar({ onSyncComplete }) {
-  const router = useRouter();
-  const storedUser = useSyncExternalStore(
-    subscribeToAuthState,
-    getStoredAuthUserSnapshot,
-    getServerAuthUserSnapshot,
-  );
-  const user = useMemo(() => {
-    if (!storedUser) return null;
-
-    try {
-      return JSON.parse(storedUser);
-    } catch (error) {
-      console.error("Failed to read the signed-in user profile:", error);
-      return null;
-    }
-  }, [storedUser]);
+export default function Navbar({
+  onSyncComplete,
+  searchQuery,
+  onSearchChange,
+}) {
   const [syncing, setSyncing] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [pushSubscribed, setPushSubscribed] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
   const [syncError, setSyncError] = useState("");
   const [statusError, setStatusError] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
-  const theme = useSyncExternalStore(
-    subscribeToTheme,
-    getThemeSnapshot,
-    getServerThemeSnapshot,
-  );
-  const isDarkMode = theme === "dark";
-
-  const refreshPushStatus = useCallback(async () => {
-    try {
-      const [status, settingsResponse] = await Promise.all([
-        getPushSubscriptionStatus(),
-        api.get("/notifications/settings"),
-      ]);
-      setPushSubscribed(
-        status.subscribed &&
-          Boolean(settingsResponse.data?.data?.browserPushEnabled),
-      );
-    } catch (error) {
-      console.error("Unable to refresh browser notification status:", error);
-      setPushSubscribed(false);
-    }
-  }, []);
-
-  const closeNotificationDrawer = useCallback(() => {
-    setIsDrawerOpen(false);
-    void refreshPushStatus();
-  }, [refreshPushStatus]);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
 
   useEffect(() => {
     let isActive = true;
-    const loadPushStatus = async () => {
+    const loadLastSync = async () => {
       try {
-        const [status, settingsResponse] = await Promise.all([
-          getPushSubscriptionStatus(),
-          api.get("/notifications/settings"),
-        ]);
+        const status = await fetchSyncStatus();
         if (isActive) {
-          setPushSubscribed(
-            status.subscribed &&
-              Boolean(settingsResponse.data?.data?.browserPushEnabled),
-          );
+          setSyncStatus(status);
+          if (status.status === "completed") {
+            setLastSyncedAt(status.updatedAt || status.startedAt);
+          }
         }
       } catch (error) {
-        console.error("Unable to load browser notification status:", error);
-        if (isActive) setPushSubscribed(false);
+        console.error("Unable to load the last sync status:", error);
+        if (isActive) setStatusError("Last sync time is unavailable.");
       }
     };
-    void loadPushStatus();
+    void loadLastSync();
 
     return () => {
       isActive = false;
     };
   }, []);
-
-  const handleSignOut = () => {
-    clearAuthSession();
-    router.replace("/login");
-  };
 
   useEffect(() => {
     if (!syncing) return undefined;
@@ -182,13 +89,6 @@ export default function Navbar({ onSyncComplete }) {
     };
   }, [syncing]);
 
-  const toggleTheme = () => {
-    const nextIsDarkMode = !isDarkMode;
-    document.documentElement.classList.toggle("dark", nextIsDarkMode);
-    window.localStorage.setItem("theme", nextIsDarkMode ? "dark" : "light");
-    window.dispatchEvent(new Event(themeChangeEvent));
-  };
-
   const handleSync = async () => {
     try {
       setSyncing(true);
@@ -215,7 +115,9 @@ export default function Navbar({ onSyncComplete }) {
         totalRepositories: result.syncedReposCount,
         syncedPullRequests: result.syncedPrsCount,
         currentRepository: null,
+        updatedAt: new Date().toISOString(),
       }));
+      setLastSyncedAt(new Date().toISOString());
       if (onSyncComplete) await onSyncComplete();
     } catch (err) {
       console.error("Sync failed:", err);
@@ -270,129 +172,62 @@ export default function Navbar({ onSyncComplete }) {
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}m ${String(
     elapsedSeconds % 60,
   ).padStart(2, "0")}s`;
+  const lastSyncedLabel =
+    lastSyncedAt && !Number.isNaN(new Date(lastSyncedAt).getTime())
+    ? `Last synced ${new Date(lastSyncedAt).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })}`
+    : lastSyncedAt
+      ? "Last sync time unavailable"
+      : "No successful sync recorded";
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 min-h-16 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-black">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 32 32"
-                className="h-full w-full"
-                aria-hidden="true"
-              >
-                <path
-                  d="M8 10.5v11M10.5 24h2c4 0 4-4 4-8V8h4.5"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="24" cy="8" r="5" fill="#ffffff" opacity=".16" />
-                <circle
-                  cx="24"
-                  cy="8"
-                  r="4.5"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="1"
-                  opacity=".4"
-                >
-                  <animate
-                    attributeName="r"
-                    values="3.5;6;3.5"
-                    dur="2.4s"
-                    repeatCount="indefinite"
-                  />
-                  <animate
-                    attributeName="opacity"
-                    values=".4;0;.4"
-                    dur="2.4s"
-                    repeatCount="indefinite"
-                  />
-                </circle>
-                <g fill="#ffffff">
-                  <circle cx="8" cy="8" r="2.5" />
-                  <circle cx="8" cy="24" r="2.5" />
-                  <circle cx="24" cy="8" r="2.5" />
-                </g>
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
-                GitHub Analytics
-              </h1>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Team health & activity monitor
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {user && (
-              <span
-                title={user.email || user.name}
-                className="inline-block max-w-28 truncate rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-700 sm:max-w-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
-              >
-                {user.name || user.email}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsDrawerOpen(true)}
-              aria-label="Open notification settings"
-              title="Notification settings"
-              className="relative rounded-lg border border-zinc-200 bg-white p-2 text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              <Bell size={18} weight="bold" aria-hidden="true" />
-              {!pushSubscribed && (
-                <span
-                  aria-hidden="true"
-                  className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-zinc-900 ring-2 ring-white dark:bg-zinc-100 dark:ring-zinc-900"
-                />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              <SignOut size={16} weight="bold" aria-hidden="true" />
-              Sign Out
-            </button>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-              title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
-              className="rounded-lg border border-zinc-200 bg-white p-2 text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            >
-              {isDarkMode ? <Sun size={18} weight="bold" /> : <Moon size={18} weight="bold" />}
-            </button>
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              <ArrowsClockwise
-                size={16}
-                weight="bold"
-                className={syncing ? "animate-spin" : ""}
-              />
-              {syncing ? "Syncing GitHub..." : "Sync Data"}
-            </button>
-          </div>
+      <header className="ml-0 flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:pr-6">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Dashboard <span className="mx-1.5 text-zinc-400">/</span> Telemetry
+          </p>
+          <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
+            {statusError || lastSyncedLabel}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <label className="relative w-32 sm:w-48 lg:w-64">
+            <MagnifyingGlass
+              size={17}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"
+            />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={onSearchChange}
+              placeholder="Search dashboard"
+              aria-label="Search developers and repositories"
+              className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 shadow-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-600"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleSync}
+            disabled={syncing}
+            aria-label={syncing ? "Syncing GitHub data" : "Sync Data"}
+            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            <ArrowsClockwise
+              size={16}
+              weight="bold"
+              className={syncing ? "animate-spin" : ""}
+              aria-hidden="true"
+            />
+            <span className="hidden sm:inline">
+              {syncing ? "Syncing..." : "Sync Data"}
+            </span>
+          </button>
         </div>
       </header>
-
-      <NotificationSettingsDrawer
-        isOpen={isDrawerOpen}
-        onClose={closeNotificationDrawer}
-        onSaved={() => void refreshPushStatus()}
-      />
 
       {syncModalOpen && (
         <div
