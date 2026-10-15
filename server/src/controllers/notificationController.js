@@ -5,7 +5,7 @@ const getOrCreateSettings = (userId) =>
   NotificationSetting.findOneAndUpdate(
     { user: userId },
     { $setOnInsert: { user: userId } },
-    { new: true, upsert: true, setDefaultsOnInsert: true },
+    { returnDocument: "after", upsert: true, setDefaultsOnInsert: true },
   );
 
 const handleControllerError = (res, error, action) => {
@@ -94,7 +94,7 @@ const updateSettings = async (req, res) => {
       { user: req.user._id },
       { $set: updates, $setOnInsert: { user: req.user._id } },
       {
-        new: true,
+        returnDocument: "after",
         upsert: true,
         runValidators: true,
         setDefaultsOnInsert: true,
@@ -117,9 +117,8 @@ const updateSettings = async (req, res) => {
 
 const subscribePush = async (req, res) => {
   try {
-    const subscription = req.body && req.body.subscription
-      ? req.body.subscription
-      : req.body;
+    const subscription =
+      req.body && req.body.subscription ? req.body.subscription : req.body;
     const { endpoint, keys } = subscription || {};
 
     if (
@@ -133,7 +132,8 @@ const subscribePush = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "A valid push subscription with endpoint and keys is required.",
+        message:
+          "A valid push subscription with endpoint and keys is required.",
       });
     }
 
@@ -152,12 +152,11 @@ const subscribePush = async (req, res) => {
           },
         },
       },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     const result =
-      updatedSettings ||
-      (await NotificationSetting.findById(settings._id));
+      updatedSettings || (await NotificationSetting.findById(settings._id));
 
     return res.status(200).json({
       success: true,
@@ -192,9 +191,7 @@ const testPush = async (req, res) => {
       });
     }
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Test push sent" });
+    return res.status(200).json({ success: true, message: "Test push sent" });
   } catch (error) {
     console.error("Test push error:", error);
     return res.status(error.statusCode || 500).json({

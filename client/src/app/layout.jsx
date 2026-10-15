@@ -30,7 +30,9 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col">
         <Suspense fallback={<AuthLoading />}>
-          <AuthGuard>{children}</AuthGuard>
+          {/* <AuthGuard> */}
+          {children}
+          {/* </AuthGuard> */}
         </Suspense>
         <Script id="theme-init" strategy="beforeInteractive">
           {`try {

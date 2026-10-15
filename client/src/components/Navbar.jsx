@@ -1,5 +1,6 @@
 "use client";
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -7,6 +8,7 @@ import React, {
 } from "react";
 import {
   ArrowsClockwise,
+  Bell,
   CheckCircle,
   CircleNotch,
   Clock,
@@ -27,6 +29,9 @@ import {
   subscribeToAuthState,
   triggerSync,
 } from "@/lib/api";
+import api from "@/lib/api";
+import NotificationSettingsDrawer from "@/components/NotificationSettingsDrawer";
+import { getPushSubscriptionStatus } from "@/lib/pushManager";
 
 const themeChangeEvent = "dashboard-theme-change";
 
@@ -71,6 +76,8 @@ export default function Navbar({ onSyncComplete }) {
     }
   }, [storedUser]);
   const [syncing, setSyncing] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
   const [syncError, setSyncError] = useState("");
@@ -82,6 +89,53 @@ export default function Navbar({ onSyncComplete }) {
     getServerThemeSnapshot,
   );
   const isDarkMode = theme === "dark";
+
+  const refreshPushStatus = useCallback(async () => {
+    try {
+      const [status, settingsResponse] = await Promise.all([
+        getPushSubscriptionStatus(),
+        api.get("/notifications/settings"),
+      ]);
+      setPushSubscribed(
+        status.subscribed &&
+          Boolean(settingsResponse.data?.data?.browserPushEnabled),
+      );
+    } catch (error) {
+      console.error("Unable to refresh browser notification status:", error);
+      setPushSubscribed(false);
+    }
+  }, []);
+
+  const closeNotificationDrawer = useCallback(() => {
+    setIsDrawerOpen(false);
+    void refreshPushStatus();
+  }, [refreshPushStatus]);
+
+  useEffect(() => {
+    let isActive = true;
+    const loadPushStatus = async () => {
+      try {
+        const [status, settingsResponse] = await Promise.all([
+          getPushSubscriptionStatus(),
+          api.get("/notifications/settings"),
+        ]);
+        if (isActive) {
+          setPushSubscribed(
+            status.subscribed &&
+              Boolean(settingsResponse.data?.data?.browserPushEnabled),
+          );
+        }
+      } catch (error) {
+        console.error("Unable to load browser notification status:", error);
+        if (isActive) setPushSubscribed(false);
+      }
+    };
+    void loadPushStatus();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const handleSignOut = () => {
     clearAuthSession();
@@ -288,6 +342,21 @@ export default function Navbar({ onSyncComplete }) {
             )}
             <button
               type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              aria-label="Open notification settings"
+              title="Notification settings"
+              className="relative rounded-lg border border-zinc-200 bg-white p-2 text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <Bell size={18} weight="bold" aria-hidden="true" />
+              {!pushSubscribed && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-zinc-900 ring-2 ring-white dark:bg-zinc-100 dark:ring-zinc-900"
+                />
+              )}
+            </button>
+            <button
+              type="button"
               onClick={handleSignOut}
               className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
@@ -318,6 +387,12 @@ export default function Navbar({ onSyncComplete }) {
           </div>
         </div>
       </header>
+
+      <NotificationSettingsDrawer
+        isOpen={isDrawerOpen}
+        onClose={closeNotificationDrawer}
+        onSaved={() => void refreshPushStatus()}
+      />
 
       {syncModalOpen && (
         <div

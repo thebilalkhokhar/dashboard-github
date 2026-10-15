@@ -61,6 +61,10 @@ The Axios client reads `NEXT_PUBLIC_API_BASE_URL` and falls back to `http://loca
 
 The sync button's owner is currently set in `src/lib/api.js`. The server also supports an owner configured through `GITHUB_TARGET_OWNER` when the request body does not include one.
 
+## Browser push notifications
+
+The service worker is served from `public/sw.js` at `/sw.js`. Browser subscription helpers are in `src/lib/pushManager.js` and use the shared authenticated Axios client for `GET /notifications/vapid-key` and `POST /notifications/subscribe`. Configure the public API base with `NEXT_PUBLIC_API_BASE_URL` as above; no VAPID key should be added to the client environment because the authenticated API returns the public key. Configure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_MAILTO` in the server environment as described in the [server README](../server/README.md).
+
 ## Production
 
 ```powershell
