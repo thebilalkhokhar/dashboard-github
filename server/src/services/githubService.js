@@ -1,11 +1,21 @@
-const { Octokit } = require("@octokit/rest");
 const Repository = require("../models/Repository");
 const PullRequest = require("../models/PullRequest");
 const DeveloperActivity = require("../models/DeveloperActivity");
 
-const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
-});
+let octokitPromise;
+
+const getOctokit = () => {
+  if (!octokitPromise) {
+    octokitPromise = import("@octokit/rest").then(
+      ({ Octokit }) =>
+        new Octokit({
+          auth: process.env.GITHUB_TOKEN,
+        }),
+    );
+  }
+
+  return octokitPromise;
+};
 
 /**
  * Identify if a repository is inactive based on the last pushed date. Agar last pushed date 90 din se purana hai to inactive consider karein
@@ -24,8 +34,13 @@ const checkIsStuck = (createdAt) => {
   return Date.now() - new Date(createdAt).getTime() > fiveDaysInMs;
 };
 
-const fetchAllPages = (endpoint, parameters) =>
-  octokit.paginate(endpoint, { ...parameters, per_page: 100 });
+const fetchAllPages = async (getEndpoint, parameters) => {
+  const octokit = await getOctokit();
+  return octokit.paginate(getEndpoint(octokit), {
+    ...parameters,
+    per_page: 100,
+  });
+};
 
 /**
  * Repositories fetch and upsert
@@ -33,17 +48,21 @@ const fetchAllPages = (endpoint, parameters) =>
 const syncRepositories = async (owner, repoLimit, onProgress) => {
   let reposData;
   try {
-    reposData = await fetchAllPages(octokit.rest.repos.listForOrg, {
-      org: owner,
-    });
+    reposData = await fetchAllPages(
+      (octokit) => octokit.rest.repos.listForOrg,
+      { org: owner },
+    );
   } catch (error) {
     if (error.status !== 404) throw error;
 
     reposData = (
-      await fetchAllPages(octokit.rest.repos.listForAuthenticatedUser, {
-        affiliation: "owner,collaborator,organization_member",
-        visibility: "all",
-      })
+      await fetchAllPages(
+        (octokit) => octokit.rest.repos.listForAuthenticatedUser,
+        {
+          affiliation: "owner,collaborator,organization_member",
+          visibility: "all",
+        },
+      )
     ).filter(
       (repo) => repo.owner?.login?.toLocaleLowerCase() === owner.toLocaleLowerCase(),
     );
@@ -70,7 +89,7 @@ const syncRepositories = async (owner, repoLimit, onProgress) => {
     });
     const isInactive = checkIsInactive(repo.pushed_at);
     const contributors = await fetchAllPages(
-      octokit.rest.repos.listContributors,
+      (octokit) => octokit.rest.repos.listContributors,
       { owner, repo: repo.name },
     );
     const primaryContributor = contributors[0];
@@ -178,7 +197,7 @@ const syncRepositories = async (owner, repoLimit, onProgress) => {
  * Pull Requests fetch and upsert
  */
 const syncPullRequestsForRepo = async (owner, repoDoc) => {
-  const pulls = await fetchAllPages(octokit.rest.pulls.list, {
+  const pulls = await fetchAllPages((octokit) => octokit.rest.pulls.list, {
     owner,
     repo: repoDoc.name,
     state: "all",
