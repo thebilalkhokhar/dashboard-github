@@ -42,6 +42,7 @@ const syncRoutes = require("./routes/syncRoutes");
 const repoRoutes = require("./routes/repoRoutes");
 const prRoutes = require("./routes/prRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 // Routes mapping
 app.use("/api/auth", authRoutes);
@@ -49,5 +50,6 @@ app.use("/api/sync", syncRoutes);
 app.use("/api/repos", repoRoutes);
 app.use("/api/prs", prRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 module.exports = app;

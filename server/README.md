@@ -27,7 +27,20 @@ GITHUB_TARGET_OWNER=fastify
 # Optional positive integer; unset to process all fetched repositories
 # GITHUB_REPO_LIMIT=5
 CLIENT_URL=http://localhost:3000
+VAPID_PUBLIC_KEY=your-vapid-public-key
+VAPID_PRIVATE_KEY=your-vapid-private-key
+VAPID_MAILTO=mailto:admin@example.com
 ```
+
+Install `web-push` in this directory when setting up browser push delivery:
+
+```powershell
+npm install web-push
+```
+
+Keep the VAPID keys server-side and configure `VAPID_PUBLIC_KEY`,
+`VAPID_PRIVATE_KEY`, and `VAPID_MAILTO` in `server/.env`. The public key is
+exposed to authenticated clients by `GET /api/notifications/vapid-key`.
 
 ### Create a GitHub token for private repositories
 
@@ -54,6 +67,9 @@ No write or admin permissions are needed. This token only lets the dashboard rea
 | `GITHUB_TARGET_OWNER` | Yes, for sync   | Organization or username whose repositories are synced                                               |
 | `GITHUB_REPO_LIMIT`   | No              | Positive integer limit for repositories processed; unset or blank processes all fetched repositories |
 | `CLIENT_URL`          | No              | Allowed CORS origin; defaults to `http://localhost:3000`                                             |
+| `VAPID_PUBLIC_KEY`    | For push        | Public VAPID key returned to authenticated clients for browser subscriptions                          |
+| `VAPID_PRIVATE_KEY`   | For push        | Server-only private VAPID key                                                                         |
+| `VAPID_MAILTO`        | For push        | Contact URI used as the VAPID subject when sending push notifications                                 |
 
 Start in development mode:
 
@@ -74,6 +90,21 @@ The server connects to MongoDB before listening. Check its health at [http://loc
 
 The default API origin is `http://localhost:5000`. JSON API routes use the `/api` prefix.
 API requests establish a shared MongoDB connection before running database operations. If the connection is unavailable, API routes return `503` with a database-unavailable message; `/health` checks the process without requiring MongoDB.
+
+### Notifications and settings
+
+All notification endpoints require a bearer token:
+
+| Endpoint                              | Request body                                      | Result                                      |
+| ------------------------------------- | ------------------------------------------------- | ------------------------------------------- |
+| `GET /api/notifications/settings`     | —                                                 | Current settings, creating defaults if absent |
+| `PUT /api/notifications/settings`     | Any settings fields to update                     | Updated settings                            |
+| `POST /api/notifications/subscribe`   | Push subscription object (or `{ "subscription": ... }`) | Saves the subscription if its endpoint is new |
+| `GET /api/notifications/vapid-key`    | —                                                 | Configured public VAPID key                 |
+
+Settings updates accept the boolean fields `browserPushEnabled`, `stuckPrAlerts`,
+`inactiveRepoAlerts`, and `syncAlerts`, plus integer thresholds
+`inactiveRepoDays` (1–365) and `stuckPrHours` (1–720).
 
 ### Health
 

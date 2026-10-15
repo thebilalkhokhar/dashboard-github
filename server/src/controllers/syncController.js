@@ -1,4 +1,5 @@
 const { syncAllData } = require("../services/githubService");
+const { evaluateAndTriggerAlerts } = require("../utils/alertEvaluator");
 
 let syncStatus = {
   status: "idle",
@@ -45,6 +46,12 @@ const triggerSync = async (req, res) => {
         updatedAt: new Date().toISOString(),
       };
     });
+
+    try {
+      await evaluateAndTriggerAlerts(req.user._id);
+    } catch (error) {
+      console.error("Post-sync alert evaluation failed:", error.message);
+    }
 
     syncStatus = {
       ...syncStatus,

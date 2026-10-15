@@ -21,6 +21,7 @@ const pullRequestSchema = new mongoose.Schema(
     isStuck: { type: Boolean, default: false },
     reviewTimeHours: { type: Number, default: 0 },
     openedAt: { type: Date, required: true },
+    lastActivityAt: { type: Date },
     mergedAt: { type: Date, default: null },
     closedAt: { type: Date, default: null },
   },

@@ -222,6 +222,7 @@ const syncPullRequestsForRepo = async (owner, repoDoc) => {
       state: pr.state,
       isStuck,
       openedAt: new Date(pr.created_at),
+      lastActivityAt: new Date(pr.updated_at || pr.created_at),
       mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
       closedAt: pr.closed_at ? new Date(pr.closed_at) : null,
     };
