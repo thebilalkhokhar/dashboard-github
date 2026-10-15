@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import AuthGuard from "@/components/AuthGuard";
 import Navbar from "@/components/Navbar";
 import MetricCard from "@/components/MetricCard";
 import RepositoryTable from "@/components/RepositoryTable";
@@ -22,7 +23,7 @@ import {
 const REPOSITORY_FETCH_PAGE_SIZE = 100;
 const TABLE_PAGE_SIZE = 10;
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [overview, setOverview] = useState(null);
   const [developers, setDevelopers] = useState([]);
   const [stuckPrs, setStuckPrs] = useState([]);
@@ -236,5 +237,13 @@ export default function DashboardPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
   );
 }

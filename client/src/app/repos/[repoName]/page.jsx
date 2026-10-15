@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import AuthGuard from "@/components/AuthGuard";
 import {
   ArrowLeft,
   ArrowSquareOut,
@@ -605,8 +606,10 @@ function RepositoryDetailContent() {
 
 export default function RepositoryDetailPage() {
   return (
-    <Suspense fallback={<RepositoryDetailSkeleton />}>
-      <RepositoryDetailContent />
-    </Suspense>
+    <AuthGuard>
+      <Suspense fallback={<RepositoryDetailSkeleton />}>
+        <RepositoryDetailContent />
+      </Suspense>
+    </AuthGuard>
   );
 }

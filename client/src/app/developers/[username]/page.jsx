@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import AuthGuard from "@/components/AuthGuard";
 import {
   ArrowLeft,
   ArrowSquareOut,
@@ -371,8 +372,10 @@ function DeveloperProfileContent() {
 
 export default function DeveloperProfilePage() {
   return (
-    <Suspense fallback={<ProfileSkeleton />}>
-      <DeveloperProfileContent />
-    </Suspense>
+    <AuthGuard>
+      <Suspense fallback={<ProfileSkeleton />}>
+        <DeveloperProfileContent />
+      </Suspense>
+    </AuthGuard>
   );
 }

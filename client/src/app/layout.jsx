@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import AuthGuard, { AuthLoading } from "@/components/AuthGuard";
+import { AuthLoading } from "@/components/AuthGuard";
 import RootNavigationShell from "@/components/RootNavigationShell";
 import "./globals.css";
 
@@ -31,9 +31,7 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col">
         <Suspense fallback={<AuthLoading />}>
-          <AuthGuard>
-            <RootNavigationShell>{children}</RootNavigationShell>
-          </AuthGuard>
+          <RootNavigationShell>{children}</RootNavigationShell>
         </Suspense>
         <Script id="theme-init" strategy="beforeInteractive">
           {`try {
