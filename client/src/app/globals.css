@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@keyframes mobile-nav-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {

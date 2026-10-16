@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -32,7 +31,6 @@ import {
   subscribeToAuthState,
 } from "@/lib/api";
 import { setThemePreference, useThemePreference } from "@/lib/theme";
-import SettingsModal from "@/components/SettingsModal";
 
 const navigationItems = [
   { label: "Overview", href: "/", icon: SquaresFour, section: "overview" },
@@ -71,12 +69,11 @@ const getInitials = (name) =>
     .join("")
     .toUpperCase() || "GA";
 
-export default function Sidebar() {
+export default function Sidebar({ onOpenSettings }) {
   const pathname = usePathname();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const profileButtonRef = useRef(null);
   const profileMenuRef = useRef(null);
   const [profileMenuPosition, setProfileMenuPosition] = useState(null);
@@ -111,11 +108,6 @@ export default function Sidebar() {
     clearAuthSession();
     router.replace("/login");
   };
-  const closeSettings = useCallback(() => {
-    setSettingsOpen(false);
-    window.requestAnimationFrame(() => profileButtonRef.current?.focus());
-  }, []);
-
   useEffect(() => {
     if (!profileMenuOpen) return undefined;
 
@@ -161,7 +153,7 @@ export default function Sidebar() {
     <>
       <aside
         aria-label="Primary navigation"
-        className={`sticky top-0 z-40 my-3 ml-3 flex h-[calc(100vh-1.5rem)] shrink-0 flex-col justify-between overflow-hidden whitespace-nowrap rounded-2xl border border-zinc-200 bg-white/90 p-3 shadow-sm backdrop-blur-md transition-[width] duration-200 ease-in-out dark:border-zinc-800 dark:bg-zinc-950/90 ${
+        className={`sticky top-0 z-40 my-3 ml-3 hidden h-[calc(100vh-1.5rem)] shrink-0 flex-col justify-between overflow-hidden whitespace-nowrap rounded-2xl border border-zinc-200 bg-white/90 p-3 shadow-sm backdrop-blur-md transition-[width] duration-200 ease-in-out md:flex dark:border-zinc-800 dark:bg-zinc-950/90 ${
           expanded ? "w-64" : "w-16"
         }`}
       >
@@ -169,7 +161,13 @@ export default function Sidebar() {
           <div className="mb-7 flex h-10 items-center overflow-hidden whitespace-nowrap">
             <div className="group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
               <span className="absolute flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-black">
-                <BrandMark />
+                <Image
+                  src="/icon.svg"
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="h-full w-full rounded-lg"
+                />
               </span>
               <button
                 type="button"
@@ -281,7 +279,7 @@ export default function Sidebar() {
                     role="menuitem"
                     onClick={() => {
                       setProfileMenuOpen(false);
-                      setSettingsOpen(true);
+                      onOpenSettings();
                     }}
                     className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-900"
                   >
@@ -369,36 +367,6 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      <SettingsModal
-        isOpen={settingsOpen}
-        onClose={closeSettings}
-        user={user}
-      />
     </>
-  );
-}
-
-function BrandMark() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 32 32"
-      className="h-full w-full"
-      aria-hidden="true"
-    >
-      <path
-        d="M8 10.5v11M10.5 24h2c4 0 4-4 4-8V8h4.5"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <g fill="#ffffff">
-        <circle cx="8" cy="8" r="2.5" />
-        <circle cx="8" cy="24" r="2.5" />
-        <circle cx="24" cy="8" r="2.5" />
-      </g>
-    </svg>
   );
 }

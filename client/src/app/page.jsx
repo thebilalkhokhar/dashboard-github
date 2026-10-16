@@ -162,7 +162,7 @@ function DashboardContent() {
         }}
       />
 
-      <main className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 flex-1 space-y-8">
+      <main className="mx-auto w-full min-w-0 max-w-[1920px] flex-1 space-y-6 overflow-y-auto px-4 pb-8 pt-4 md:space-y-8 md:px-6 md:pb-10 md:pt-6">
         {/* Metric Cards Grid */}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <MetricCard

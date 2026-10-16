@@ -24,30 +24,6 @@ export default function Navbar({
   const [syncError, setSyncError] = useState("");
   const [statusError, setStatusError] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
-  const [lastSyncedAt, setLastSyncedAt] = useState(null);
-
-  useEffect(() => {
-    let isActive = true;
-    const loadLastSync = async () => {
-      try {
-        const status = await fetchSyncStatus();
-        if (isActive) {
-          setSyncStatus(status);
-          if (status.status === "completed") {
-            setLastSyncedAt(status.updatedAt || status.startedAt);
-          }
-        }
-      } catch (error) {
-        console.error("Unable to load the last sync status:", error);
-        if (isActive) setStatusError("Last sync time is unavailable.");
-      }
-    };
-    void loadLastSync();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!syncing) return undefined;
@@ -117,7 +93,6 @@ export default function Navbar({
         currentRepository: null,
         updatedAt: new Date().toISOString(),
       }));
-      setLastSyncedAt(new Date().toISOString());
       if (onSyncComplete) await onSyncComplete();
     } catch (err) {
       console.error("Sync failed:", err);
@@ -172,29 +147,14 @@ export default function Navbar({
   const elapsedLabel = `${Math.floor(elapsedSeconds / 60)}m ${String(
     elapsedSeconds % 60,
   ).padStart(2, "0")}s`;
-  const lastSyncedLabel =
-    lastSyncedAt && !Number.isNaN(new Date(lastSyncedAt).getTime())
-    ? `Last synced ${new Date(lastSyncedAt).toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })}`
-    : lastSyncedAt
-      ? "Last sync time unavailable"
-      : "No successful sync recorded";
-
   return (
     <>
-      <header className="ml-0 flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:pr-6">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Dashboard <span className="mx-1.5 text-zinc-400">/</span> Telemetry
-          </p>
-          <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
-            {statusError || lastSyncedLabel}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <label className="relative w-32 sm:w-48 lg:w-64">
+      <header className="mx-4 mt-4 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white/80 p-4 shadow-sm backdrop-blur-md sm:mx-6 sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-zinc-800/80 dark:bg-zinc-950/80">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
+          Dashboard
+        </h1>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <label className="relative w-full sm:w-64">
             <MagnifyingGlass
               size={17}
               aria-hidden="true"
@@ -206,7 +166,7 @@ export default function Navbar({
               onChange={onSearchChange}
               placeholder="Search dashboard"
               aria-label="Search developers and repositories"
-              className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 shadow-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-600"
+              className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 shadow-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-zinc-600"
             />
           </label>
           <button
@@ -214,7 +174,8 @@ export default function Navbar({
             onClick={handleSync}
             disabled={syncing}
             aria-label={syncing ? "Syncing GitHub data" : "Sync Data"}
-            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            title={syncing ? "GitHub sync in progress" : "Sync GitHub data"}
+            className="flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 sm:w-auto dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
             <ArrowsClockwise
               size={16}
@@ -222,9 +183,7 @@ export default function Navbar({
               className={syncing ? "animate-spin" : ""}
               aria-hidden="true"
             />
-            <span className="hidden sm:inline">
-              {syncing ? "Syncing..." : "Sync Data"}
-            </span>
+            <span>{syncing ? "Syncing..." : "Sync Data"}</span>
           </button>
         </div>
       </header>
