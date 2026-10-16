@@ -354,7 +354,7 @@ export default function SettingsModal({ isOpen, onClose, user }) {
         aria-modal="true"
         aria-labelledby="settings-modal-title"
         tabIndex={-1}
-        className={`relative z-10 flex h-[min(520px,calc(100vh-2rem))] w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-2xl transition-[opacity,transform] duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 ${
+        className={`relative z-10 flex h-[min(720px,calc(100vh-2rem))] w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-2xl transition-[opacity,transform] duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 ${
           isOpen ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"
         }`}
       >
